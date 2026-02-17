@@ -2,10 +2,17 @@
 {% block title %}{{ basvuru.basvuru_no }} - Değerlendirme{% endblock %}
 
 {% block content %}
+
+<!-- Print header (only visible when printing) -->
+<div class="print-header">
+    <h3>MEB Araştırma Uygulama İzni Değerlendirme Raporu</h3>
+    <p>{{ basvuru.basvuru_no }} — {{ basvuru.ad_soyad }} — {{ basvuru.basvuru_tarihi }}</p>
+</div>
+
 <form action="{{ url_for('degerlendirme_kaydet', id=basvuru.id) }}" method="POST" id="degerlendirmeForm">
 
-    <!-- Üst Bar: Geri + Kaydet -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <!-- Üst Bar: Geri + Yazdır + Kaydet -->
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
         <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i>Listeye Dön
         </a>
@@ -15,6 +22,9 @@
                 <i class="bi {{ basvuru.degerlendirme_durumu|durum_ikon }} me-1"></i>
                 {{ basvuru.degerlendirme_durumu|durum_metin }}
             </span>
+            <button type="button" class="btn btn-outline-secondary btn-lg px-3" onclick="window.print()" title="Yazdır">
+                <i class="bi bi-printer me-1"></i>Yazdır
+            </button>
             <button type="submit" class="btn btn-success btn-lg px-4">
                 <i class="bi bi-check2-all me-1"></i>Kaydet
             </button>
@@ -93,6 +103,7 @@
                 ('Gönüllü Katılım Formu', belgeler.gonullu_katilim),
                 ('Veli Onam Formu', belgeler.veli_onam),
                 ('Ölçek Kullanım İzni', belgeler.olcek_izni),
+                ('Diğer Ekler', belgeler.diger_ekler),
                 ] %}
                 {% for baslik, linkler in belge_listesi %}
                 {% if linkler %}
@@ -102,9 +113,10 @@
                         <div>
                             <strong>{{ baslik }}</strong>
                             {% for link in linkler %}
-                            <br><a href="{{ link.url }}" target="_blank" class="belge-link">
+                            <br><button type="button" class="btn btn-link p-0 belge-link"
+                                onclick="belgeGoster('{{ '/belge-goster/' + link.local_path if link.local_path else link.url }}', '{{ baslik }} - {{ link.text }}')">
                                 <i class="bi bi-box-arrow-up-right"></i> {{ link.text }}
-                            </a>
+                            </button>
                             {% endfor %}
                         </div>
                     </div>
@@ -158,7 +170,7 @@
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover align-middle mb-0" id="onKontrolTablosu">
                     <thead>
                         <tr>
                             <th class="ps-4" style="width: 320px;">Madde</th>
@@ -170,7 +182,8 @@
                     </thead>
                     <tbody>
                         {% for ok in on_kontroller %}
-                        <tr>
+                        <tr
+                            class="on-kontrol-row {{ 'on-kontrol-var' if ok.durum=='VAR' }}{{ 'on-kontrol-yok' if ok.durum=='YOK' }}{{ 'on-kontrol-na' if ok.durum=='N/A' }}">
                             <td class="ps-4 fw-medium">{{ ok.madde_adi }}</td>
                             <td class="text-center">
                                 <input type="radio" name="on_kontrol_durum_{{ ok.sira }}" value="VAR"
@@ -203,7 +216,7 @@
     <div class="card glass-card mb-4">
         <div class="card-header section-header section-header--green d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="bi bi-check2-square me-2"></i>Değerlendirme Kriterleri</h5>
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 no-print">
                 <button type="button" class="btn btn-sm btn-outline-light" id="tumunuUygun">
                     <i class="bi bi-check-all me-1"></i>Tümünü Uygun
                 </button>
@@ -219,14 +232,14 @@
                         <tr>
                             <th class="ps-4 text-center" style="width: 60px;">No</th>
                             <th>Kriter</th>
-                            <th class="text-center" style="width: 90px;">Uygun</th>
-                            <th class="text-center" style="width: 90px;">Uygun Değil</th>
+                            <th class="text-center" style="width: 100px;">Uygun</th>
+                            <th class="text-center" style="width: 100px;">Uygun Değil</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for k in kriterler %}
-                        <tr
-                            class="kriter-row {{ 'kriter-uygun' if k.sonuc == 'UYGUN' }}{{ 'kriter-uygun-degil' if k.sonuc == 'UYGUN_DEGIL' }}">
+                        <tr class="kriter-row {{ 'kriter-uygun' if k.sonuc == 'UYGUN' }}{{ 'kriter-uygun-degil' if k.sonuc == 'UYGUN_DEGIL' }}"
+                            data-kriter-no="{{ k.no }}">
                             <td class="ps-4 text-center">
                                 <span class="kriter-no">{{ k.no }}</span>
                             </td>
@@ -241,6 +254,19 @@
                                     }}>
                             </td>
                         </tr>
+                        <!-- Açıklama satırı (Uygun Değil seçilince açılır) -->
+                        <tr class="kriter-aciklama-row {{ 'show' if k.sonuc == 'UYGUN_DEGIL' }}"
+                            data-aciklama-for="{{ k.no }}">
+                            <td></td>
+                            <td colspan="3">
+                                <div class="d-flex align-items-start gap-2">
+                                    <i class="bi bi-chat-left-text text-danger mt-1"></i>
+                                    <textarea name="kriter_aciklama_{{ k.no }}" rows="2"
+                                        class="form-control form-control-sm kriter-aciklama-input"
+                                        placeholder="Uygun değil gerekçesini yazın...">{{ k.aciklama or '' }}</textarea>
+                                </div>
+                            </td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -248,19 +274,81 @@
         </div>
     </div>
 
-    <!-- Alt Kaydet Butonu -->
-    <div class="d-flex justify-content-end mb-4">
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- BÖLÜM 5: UYGUN DEĞİL ÖZETİ                                      -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="card ozet-card mb-4" id="ozetKart" style="display: none;">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Uygun Değil Özeti
+                <span class="badge bg-light text-danger ms-2" id="ozetSayac">0</span>
+            </h5>
+        </div>
+        <div class="card-body" id="ozetIcerik">
+            <!-- JS ile doldurulacak -->
+        </div>
+    </div>
+
+    <!-- Alt Kaydet + Yazdır Butonları -->
+    <div class="d-flex justify-content-between mb-4 no-print">
+        <button type="button" class="btn btn-outline-secondary btn-lg px-4" onclick="window.print()">
+            <i class="bi bi-printer me-2"></i>Yazdır
+        </button>
         <button type="submit" class="btn btn-success btn-lg px-5">
             <i class="bi bi-check2-all me-2"></i>Değerlendirmeyi Kaydet
         </button>
     </div>
 
 </form>
+
+<!-- Belge Görüntüleme Modalı -->
+<div class="modal fade" id="belgeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content glass-card border-0">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title" id="belgeModalLabel">Belge Görüntüle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body">
+                <div class="ratio ratio-16x9" style="min-height: 70vh;">
+                    <iframe id="belgeIframe" src="" frameborder="0"></iframe>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                <a id="belgeYeniSekme" href="#" target="_blank" class="btn btn-primary">
+                    <i class="bi bi-box-arrow-up-right me-1"></i>Yeni Sekmede Aç
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+    // ═══════════════════════════════════════════════════════════════
+    // Belge Görüntüleme (Pop-up)
+    // ═══════════════════════════════════════════════════════════════
+    const belgeModal = new bootstrap.Modal(document.getElementById('belgeModal'));
+    const belgeIframe = document.getElementById('belgeIframe');
+    const belgeModalLabel = document.getElementById('belgeModalLabel');
+    const belgeYeniSekme = document.getElementById('belgeYeniSekme');
+
+    function belgeGoster(url, baslik) {
+        belgeModalLabel.textContent = baslik;
+        belgeIframe.src = url;
+        belgeYeniSekme.href = url;
+        belgeModal.show();
+    }
+
+    // Modal kapandığında iframe'i temizle (bellek ve ses çalma vb. için)
+    document.getElementById('belgeModal').addEventListener('hidden.bs.modal', function () {
+        belgeIframe.src = '';
+    });
+
+    // ═══════════════════════════════════════════════════════════════
     // Değerlendirici checkbox limiti (max 2)
+    // ═══════════════════════════════════════════════════════════════
     const checkboxes = document.querySelectorAll('.deg-checkbox');
     const uyari = document.getElementById('degUyari');
 
@@ -273,20 +361,42 @@
                 setTimeout(() => uyari.classList.add('d-none'), 3000);
                 return;
             }
-            // Kart seçili görünümü
             this.closest('.deg-card').classList.toggle('deg-card--selected', this.checked);
         });
     });
 
-    // Tümünü uygun yap
-    document.getElementById('tumunuUygun')?.addEventListener('click', function () {
-        document.querySelectorAll('.radio-uygun').forEach(r => {
-            r.checked = true;
-            r.closest('tr').className = 'kriter-row kriter-uygun';
+    // ═══════════════════════════════════════════════════════════════
+    // Ön Kontrol satır renklendirme
+    // ═══════════════════════════════════════════════════════════════
+    document.querySelectorAll('#onKontrolTablosu input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', function () {
+            const row = this.closest('tr');
+            row.classList.remove('on-kontrol-var', 'on-kontrol-yok', 'on-kontrol-na');
+            if (this.value === 'VAR') row.classList.add('on-kontrol-var');
+            else if (this.value === 'YOK') row.classList.add('on-kontrol-yok');
+            else if (this.value === 'N/A') row.classList.add('on-kontrol-na');
         });
     });
 
+    // ═══════════════════════════════════════════════════════════════
+    // Tümünü uygun yap
+    // ═══════════════════════════════════════════════════════════════
+    document.getElementById('tumunuUygun')?.addEventListener('click', function () {
+        document.querySelectorAll('.radio-uygun').forEach(r => {
+            r.checked = true;
+            const row = r.closest('tr');
+            row.className = 'kriter-row kriter-uygun';
+            // Açıklama satırını gizle
+            const no = row.dataset.kriterNo;
+            const aciklamaRow = document.querySelector(`[data-aciklama-for="${no}"]`);
+            if (aciklamaRow) aciklamaRow.classList.remove('show');
+        });
+        ozetiGuncelle();
+    });
+
+    // ═══════════════════════════════════════════════════════════════
     // Temizle
+    // ═══════════════════════════════════════════════════════════════
     document.getElementById('tumunuTemizle')?.addEventListener('click', function () {
         document.querySelectorAll('#kriterTablosu input[type="radio"]').forEach(r => {
             r.checked = false;
@@ -294,24 +404,105 @@
         document.querySelectorAll('.kriter-row').forEach(row => {
             row.className = 'kriter-row';
         });
+        document.querySelectorAll('.kriter-aciklama-row').forEach(row => {
+            row.classList.remove('show');
+        });
+        ozetiGuncelle();
     });
 
-    // Satır renklendirme
+    // ═══════════════════════════════════════════════════════════════
+    // Kriter satır renklendirme + açıklama alanı toggle
+    // ═══════════════════════════════════════════════════════════════
     document.querySelectorAll('#kriterTablosu input[type="radio"]').forEach(radio => {
         radio.addEventListener('change', function () {
             const row = this.closest('tr');
+            const no = row.dataset.kriterNo;
+            const aciklamaRow = document.querySelector(`[data-aciklama-for="${no}"]`);
+
             row.classList.remove('kriter-uygun', 'kriter-uygun-degil');
+
             if (this.value === 'UYGUN') {
                 row.classList.add('kriter-uygun');
+                if (aciklamaRow) aciklamaRow.classList.remove('show');
             } else if (this.value === 'UYGUN_DEGIL') {
                 row.classList.add('kriter-uygun-degil');
+                if (aciklamaRow) {
+                    aciklamaRow.classList.add('show');
+                    // Açıklama alanına odaklan
+                    setTimeout(() => {
+                        const textarea = aciklamaRow.querySelector('textarea');
+                        if (textarea) textarea.focus();
+                    }, 300);
+                }
             }
+            ozetiGuncelle();
         });
     });
 
+    // ═══════════════════════════════════════════════════════════════
+    // Uygun Değil Özeti — dinamik güncelleme
+    // ═══════════════════════════════════════════════════════════════
+    function ozetiGuncelle() {
+        const uygunDegilRadios = document.querySelectorAll('.radio-uygun-degil:checked');
+        const ozetKart = document.getElementById('ozetKart');
+        const ozetIcerik = document.getElementById('ozetIcerik');
+        const ozetSayac = document.getElementById('ozetSayac');
+
+        if (uygunDegilRadios.length === 0) {
+            ozetKart.style.display = 'none';
+            return;
+        }
+
+        ozetKart.style.display = 'block';
+
+        // Toplam kriter sayısını bul
+        const toplamKriter = document.querySelectorAll('.kriter-row').length;
+        const uygunSayisi = document.querySelectorAll('.radio-uygun:checked').length;
+
+        ozetSayac.textContent = `${uygunDegilRadios.length} / ${toplamKriter}`;
+
+        let html = `<div class="mb-3">
+            <strong>Toplam ${toplamKriter} kriterden ${uygunDegilRadios.length} tanesi uygun değil bulunmuştur.</strong>
+            ${uygunSayisi > 0 ? ` <span class="text-success">(${uygunSayisi} kriter uygun)</span>` : ''}
+        </div>`;
+
+        html += '<div>';
+        uygunDegilRadios.forEach(radio => {
+            const row = radio.closest('tr');
+            const no = row.dataset.kriterNo;
+            const metin = row.querySelector('.kriter-metin')?.textContent?.trim() || '';
+            const aciklamaRow = document.querySelector(`[data-aciklama-for="${no}"]`);
+            const aciklama = aciklamaRow?.querySelector('textarea')?.value?.trim() || '';
+
+            // Kriter metnini kısalt (ilk 120 karakter)
+            const kisaMetin = metin.length > 120 ? metin.substring(0, 120) + '...' : metin;
+
+            html += `<div class="ozet-item">
+                <span class="ozet-item-no">Kriter ${no}:</span> ${kisaMetin}`;
+            if (aciklama) {
+                html += `<br><em class="text-muted ms-3"><i class="bi bi-chat-left-text me-1"></i>${aciklama}</em>`;
+            }
+            html += '</div>';
+        });
+        html += '</div>';
+
+        ozetIcerik.innerHTML = html;
+    }
+
+    // Açıklama textarea'larındaki değişikliklerde de özeti güncelle
+    document.querySelectorAll('.kriter-aciklama-input').forEach(textarea => {
+        textarea.addEventListener('input', ozetiGuncelle);
+    });
+
+    // Sayfa yüklendiğinde özeti hesapla
+    ozetiGuncelle();
+
+    // ═══════════════════════════════════════════════════════════════
     // Form değişiklik uyarısı
+    // ═══════════════════════════════════════════════════════════════
     let formChanged = false;
     document.getElementById('degerlendirmeForm').addEventListener('change', () => formChanged = true);
+    document.getElementById('degerlendirmeForm').addEventListener('input', () => formChanged = true);
     window.addEventListener('beforeunload', (e) => {
         if (formChanged) {
             e.preventDefault();

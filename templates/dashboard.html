@@ -1,5 +1,23 @@
 {% extends "base.html" %}
-{% block title %}Dashboard - MEB Araştırma İzni{% endblock %}
+{% block title %}Dashboard - MEB Araştırma Uygulama İzinleri{% endblock %}
+{% block head %}
+<style>
+    .research-title-cell {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.4;
+        max-height: 2.8em;
+        white-space: normal;
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -7,11 +25,11 @@
         <h1 class="page-title">
             <i class="bi bi-grid-1x2-fill me-2"></i>Bekleyen İşlemler
         </h1>
-        <p class="text-muted mb-0">MEBBIS araştırma izni başvurularını değerlendirin</p>
+        <p class="text-muted mb-0">MEB Araştırma Uygulama İzni Başvurularını Değerlendirin</p>
     </div>
     <div>
         <button class="btn btn-primary btn-lg px-4" data-bs-toggle="modal" data-bs-target="#mebbisModal">
-            <i class="bi bi-cloud-download me-2"></i>MEBBIS Verisi Aktar
+            <i class="bi bi-cloud-download me-2"></i>Veri Aktar
         </button>
     </div>
 </div>
@@ -112,11 +130,11 @@
                     <!-- Görev listesi -->
                     <div class="deg-gorev-list">
                         {% for g in dp.gorevler %}
-                        <a href="{{ url_for('degerlendirme', id=g.id) }}" class="deg-gorev-item">
+                        <a href="{{ url_for('degerlendirme', id=g.id) }}" class="deg-gorev-item"
+                            title="{{ g.ad_soyad or '-' }}">
                             <span
                                 class="deg-gorev-dot bg-{{ 'success' if g.durum == 'tamamlandi' else 'info' if g.durum == 'devam' else 'warning' }}"></span>
-                            <span class="deg-gorev-text" title="{{ g.basvuru_no }}">{{ g.ad_soyad or g.basvuru_no
-                                }}</span>
+                            <span class="deg-gorev-text">{{ g.basvuru_no }}</span>
                             <span
                                 class="badge bg-{{ 'success' if g.durum == 'tamamlandi' else 'info' if g.durum == 'devam' else 'warning' }}-subtle text-{{ 'success' if g.durum == 'tamamlandi' else 'info' if g.durum == 'devam' else 'warning' }} deg-gorev-badge">
                                 {{ g.durum|durum_metin }}
@@ -159,8 +177,8 @@
                         <th>Araştırmacı</th>
                         <th>Telefon</th>
                         <th>Araştırma Adı</th>
-                        <th>Nitelik</th>
-                        <th>Değerlendiriciler</th>
+                        <th class="text-center" style="width: 100px;">Nitelik</th>
+                        <th style="width: 150px;">Değerlendiriciler</th>
                         <th>Durum</th>
                         <th class="text-center">İşlem</th>
                     </tr>
@@ -178,18 +196,25 @@
                         <td>{{ b.basvuru_tarihi or '-' }}</td>
                         <td>{{ b.ad_soyad or '-' }}</td>
                         <td><small>{{ b.telefon or '-' }}</small></td>
-                        <td class="text-truncate" style="max-width: 250px;" title="{{ b.arastirma_adi }}">{{
-                            b.arastirma_adi or '-' }}</td>
-                        <td><span class="badge bg-secondary-subtle text-secondary">{{ b.arastirma_niteligi or '-'
+                        <td class="text-wrap research-title-cell" style="max-width: 400px;"
+                            title="{{ b.arastirma_adi }}">
+                            {{ b.arastirma_adi or '-' }}
+                        </td>
+                        <td class="text-center"><span class="badge bg-secondary-subtle text-secondary"
+                                style="font-size: 0.75rem; white-space: normal; display: inline-block;">{{
+                                b.arastirma_niteligi or '-'
                                 }}</span></td>
-                        <td>
-                            {% if b.degerlendiriciler %}
-                            {% for bd in b.degerlendiriciler %}
-                            <span class="badge bg-primary-subtle text-primary">{{ bd.degerlendirici_adi }}</span>
-                            {% endfor %}
-                            {% else %}
-                            <span class="text-muted">-</span>
-                            {% endif %}
+                        <td style="min-width: 140px; max-width: 160px;">
+                            <div class="d-flex flex-column gap-1 align-items-start">
+                                {% if b.degerlendiriciler %}
+                                {% for bd in b.degerlendiriciler %}
+                                <span class="badge bg-primary-subtle text-primary w-100 text-start text-wrap"
+                                    style="white-space: normal; line-height: 1.2;">{{ bd.degerlendirici_adi }}</span>
+                                {% endfor %}
+                                {% else %}
+                                <span class="text-muted small">-</span>
+                                {% endif %}
+                            </div>
                         </td>
                         <td>
                             <span
@@ -245,7 +270,8 @@
                     </div>
                     <div class="alert alert-info py-2">
                         <small><i class="bi bi-info-circle me-1"></i>
-                            Mevcut başvurular atlanır, sadece yeni başvurular eklenir.</small>
+                            Yeni başvurular eklenir, mevcut başvuruların belge bilgileri ve başvuru durumları
+                            güncellenir.</small>
                     </div>
                 </div>
                 <div class="modal-footer">

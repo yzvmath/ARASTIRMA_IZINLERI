@@ -453,11 +453,13 @@ body {
 }
 
 .kriter-uygun {
-    background-color: rgba(22, 163, 74, 0.06) !important;
+    background-color: rgba(22, 163, 74, 0.10) !important;
+    border-left: 3px solid var(--accent-green);
 }
 
 .kriter-uygun-degil {
-    background-color: rgba(220, 38, 38, 0.06) !important;
+    background-color: rgba(220, 38, 38, 0.08) !important;
+    border-left: 3px solid var(--accent-red);
 }
 
 .kriter-no {
@@ -474,18 +476,69 @@ body {
     color: var(--text-secondary);
 }
 
+.kriter-uygun .kriter-no {
+    background: var(--accent-green);
+    color: white;
+    border-color: var(--accent-green);
+}
+
+.kriter-uygun-degil .kriter-no {
+    background: var(--accent-red);
+    color: white;
+    border-color: var(--accent-red);
+}
+
 .kriter-metin {
     font-size: 0.88rem;
     line-height: 1.5;
     padding-right: 1rem;
 }
 
-/* ─── Radio Buttons ───────────────────────────────────────────────────── */
+/* ─── Kriter Açıklama Alanı ──────────────────────────────────────────── */
+.kriter-aciklama-row {
+    display: none;
+    background-color: rgba(220, 38, 38, 0.04) !important;
+    border-left: 3px solid var(--accent-red);
+}
+
+.kriter-aciklama-row.show {
+    display: table-row;
+    animation: slideDown 0.25s ease-out;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.kriter-aciklama-row td {
+    padding: 0.5rem 0.75rem 1rem !important;
+    border-top: none !important;
+}
+
+.kriter-aciklama-input {
+    border: 1px solid rgba(220, 38, 38, 0.3) !important;
+    border-radius: var(--radius-sm) !important;
+    transition: var(--transition);
+}
+
+.kriter-aciklama-input:focus {
+    border-color: var(--accent-red) !important;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
+}
+
+/* ─── Radio Buttons — Büyük ve Belirgin ──────────────────────────────── */
 .form-check-input {
-    width: 1.2em;
-    height: 1.2em;
+    width: 1.5em;
+    height: 1.5em;
     cursor: pointer;
     transition: var(--transition);
+    border: 2px solid #ced4da;
+}
+
+.form-check-input:hover {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.06);
 }
 
 .form-check-input:checked {
@@ -496,20 +549,70 @@ body {
 .radio-uygun:checked {
     background-color: var(--accent-green);
     border-color: var(--accent-green);
-    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+    box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.20);
 }
 
 .radio-yok:checked,
 .radio-uygun-degil:checked {
     background-color: var(--accent-red);
     border-color: var(--accent-red);
-    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
+    box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.20);
 }
 
 .radio-na:checked {
-    background-color: var(--text-secondary);
-    border-color: var(--text-secondary);
-    box-shadow: 0 0 0 3px rgba(108, 117, 125, 0.15);
+    background-color: #6b7280;
+    border-color: #6b7280;
+    box-shadow: 0 0 0 4px rgba(107, 114, 128, 0.20);
+}
+
+/* ─── Ön Kontrol Tablo Satır Renkleri ────────────────────────────────── */
+.on-kontrol-var {
+    background-color: rgba(22, 163, 74, 0.06) !important;
+}
+
+.on-kontrol-yok {
+    background-color: rgba(220, 38, 38, 0.06) !important;
+}
+
+.on-kontrol-na {
+    background-color: rgba(107, 114, 128, 0.06) !important;
+}
+
+/* ─── Özet Bölümü ────────────────────────────────────────────────────── */
+.ozet-card {
+    border: 2px solid rgba(220, 38, 38, 0.3);
+    border-radius: var(--radius-lg);
+    background: rgba(220, 38, 38, 0.03);
+}
+
+.ozet-card .card-header {
+    background: linear-gradient(135deg, #dc2626, #ef4444) !important;
+    color: white;
+}
+
+.ozet-item {
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
+    background: rgba(220, 38, 38, 0.05);
+    border-left: 3px solid var(--accent-red);
+    margin-bottom: 0.5rem;
+    font-size: 0.88rem;
+}
+
+.ozet-item:last-child {
+    margin-bottom: 0;
+}
+
+.ozet-item-no {
+    font-weight: 700;
+    color: var(--accent-red);
+}
+
+.ozet-bos {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--accent-green);
+    font-weight: 600;
 }
 
 /* ─── Forms ───────────────────────────────────────────────────────────── */
@@ -656,4 +759,127 @@ body {
 
 .stat-card:nth-child(4) {
     animation-delay: 0.3s;
+}
+
+/* ─── Print Styles ───────────────────────────────────────────────────── */
+@media print {
+    body {
+        background: white !important;
+        color: black !important;
+        font-size: 11pt;
+    }
+
+    .navbar, .footer-bar,
+    .btn, .no-print,
+    .deg-card input[type="checkbox"],
+    #degUyari {
+        display: none !important;
+    }
+
+    .glass-card, .card {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+        break-inside: avoid;
+        animation: none !important;
+    }
+
+    .section-header {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        color: white !important;
+    }
+
+    .section-header--blue,
+    .section-header--orange,
+    .section-header--green,
+    .section-header--purple {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .kriter-uygun, .kriter-uygun-degil,
+    .on-kontrol-var, .on-kontrol-yok, .on-kontrol-na {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .form-check-input {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .form-check-input:checked {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .radio-var:checked, .radio-uygun:checked {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .radio-yok:checked, .radio-uygun-degil:checked {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .kriter-no {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .kriter-uygun .kriter-no,
+    .kriter-uygun-degil .kriter-no {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .container {
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+
+    .kriter-aciklama-row {
+        display: none !important;
+    }
+
+    .kriter-aciklama-row.show {
+        display: table-row !important;
+    }
+
+    /* Özet her zaman yazdır */
+    .ozet-card {
+        break-inside: avoid;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .ozet-item {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Print header */
+    .print-header {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #333;
+        padding-bottom: 0.5rem;
+    }
+
+    .print-header h3 {
+        margin: 0;
+        font-size: 14pt;
+    }
+
+    .print-header p {
+        margin: 4px 0 0;
+        font-size: 10pt;
+        color: #666;
+    }
+}
+
+.print-header {
+    display: none;
 }

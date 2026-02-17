@@ -8,7 +8,7 @@ import json
 import os
 from datetime import datetime, timedelta
 
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
 from models import db, Basvuru, OnKontrol, KriterDegerlendirme, BasvuruDegerlendirici, ON_KONTROL_MADDELERI, KRITERLER
 
 # ─── Uygulama Ayarları ───────────────────────────────────────────────────────
@@ -60,16 +60,11 @@ def mebbis_json_yukle(json_path):
 
     eklenen = 0
     atlanan = 0
+    guncellenen = 0
     for kayit in veriler:
         detay = kayit.get("detay_verileri", {})
         basvuru_no = detay.get("Başvuru Numarası", "")
         if not basvuru_no:
-            continue
-
-        # Aynı başvuru zaten varsa atla
-        mevcut = Basvuru.query.filter_by(basvuru_no=basvuru_no).first()
-        if mevcut:
-            atlanan += 1
             continue
 
         # Belge linklerini JSON'a çevir
@@ -77,6 +72,79 @@ def mebbis_json_yukle(json_path):
             if isinstance(val, list):
                 return json.dumps(val, ensure_ascii=False)
             return val if val else ""
+
+
+
+        # Aynı başvuru zaten varsa → değerlendirici bilgisini güncelle
+        mevcut = Basvuru.query.filter_by(basvuru_no=basvuru_no).first()
+        if mevcut:
+            guncellendi = False
+            
+            # Güncellenecek standart metin alanları
+            metin_alanlari = {
+                "basvuru_durumu": "Başvuru Durumu",
+                "tc_kimlik": "TC Kimlik No",
+                "ad_soyad": "Ad Soyad",
+                "telefon": "Telefon",
+                "eposta": "E-Posta",
+                "adres": "Adres",
+                "basvuru_sekli": "Başvuru Şekli",
+                "basvuru_ulke": "Başvurunun Yapıldığı Ülke",
+                "meslek": "Meslek",
+                "calistigi_kurum": "Çalıştığı Kurum",
+                "arastirma_adi": "Araştırmanın Adı",
+                "egitim_teknoloji": "Eğitim Teknolojileri İle İlgili",
+                "arastirma_niteligi": "Araştırmanın Niteliği",
+                "akademik_basari": "Akademik Başarı Ölçme",
+                "arastirma_konusu": "Araştırmanın Konusu ve İlişkili Konular",
+                "anahtar_kelimeler": "Anahtar Kelimeler",
+                "yazim_dili": "Araştırmanın Yazım Dili",
+                "il_sayisi": "Uygulama Yapılacak İl Sayısı",
+                "calisma_grubu": "Çalışma Grubu",
+                "meb_teskilati": "Uygulama Yapılacak MEB Teşkilatı",
+                "okul_kurum_sayisi": "Uygulama Okul/Kurum Sayısı",
+                "ozel_bilgiler": "Özel Bilgiler",
+                "uygulama_suresi": "Uygulama Süresi",
+            }
+
+            for db_alan, detay_key in metin_alanlari.items():
+                yeni_val = detay.get(detay_key, "")
+                if db_alan == "teskilat_turu":
+                    yeni_val = _tekil_pipe(yeni_val)
+                
+                mevcut_val = getattr(mevcut, db_alan, "") or ""
+                if yeni_val and yeni_val != mevcut_val:
+                    setattr(mevcut, db_alan, yeni_val)
+                    guncellendi = True
+
+            # Belge linklerini güncelle
+            belge_alanlari = {
+                "belge_arastirma_proje": "Araştırma Proje Bilgileri (Link)",
+                "belge_veri_toplama": "Veri Toplama Aracı (Link)",
+                "belge_taahhutname": "Taahhütname (Link)",
+                "belge_etik_kurul": "Etik Kurul Onay (Link)",
+                "belge_gonullu_katilim": "Bilgilendirme ve Gönüllü Katılım Formu (Link)",
+                "belge_veli_onam": "Veli Onam Formu (Link)",
+                "belge_olcek_izni": "Ölçek Kullanım İzni (Link)",
+                "diger_ekler": "Diğer Ekler",
+            }
+            for db_alan, detay_key in belge_alanlari.items():
+                yeni_val_raw = detay.get(detay_key)
+                yeni_deger = belge_json(yeni_val_raw)
+                mevcut_deger = getattr(mevcut, db_alan, "") or ""
+                
+                # Eğer yeni veri gelmişse ve mevcutla aynı değilse güncelle (içerideki local_path farkları dahil)
+                if yeni_deger and yeni_deger != mevcut_deger:
+                    if "local_path" in yeni_deger:
+                        print(f"      INFO: {detay_key} için yerel yol yüklendi.")
+                    setattr(mevcut, db_alan, yeni_deger)
+                    guncellendi = True
+            if guncellendi:
+                mevcut.guncelleme_tarihi = datetime.utcnow()
+                guncellenen += 1
+            else:
+                atlanan += 1
+            continue
 
         basvuru = Basvuru(
             basvuru_no=basvuru_no,
@@ -112,6 +180,7 @@ def mebbis_json_yukle(json_path):
             belge_gonullu_katilim=belge_json(detay.get("Bilgilendirme ve Gönüllü Katılım Formu (Link)")),
             belge_veli_onam=belge_json(detay.get("Veli Onam Formu (Link)")),
             belge_olcek_izni=belge_json(detay.get("Ölçek Kullanım İzni (Link)")),
+            diger_ekler=belge_json(detay.get("Diğer Ekler")),
         )
         db.session.add(basvuru)
         db.session.flush()  # ID almak için
@@ -140,7 +209,7 @@ def mebbis_json_yukle(json_path):
         eklenen += 1
 
     db.session.commit()
-    return eklenen, atlanan
+    return eklenen, atlanan, guncellenen
 
 
 def belge_linklerini_parse(belge_str):
@@ -245,6 +314,7 @@ def degerlendirme(id):
         "gonullu_katilim": belge_linklerini_parse(basvuru.belge_gonullu_katilim),
         "veli_onam": belge_linklerini_parse(basvuru.belge_veli_onam),
         "olcek_izni": belge_linklerini_parse(basvuru.belge_olcek_izni),
+        "diger_ekler": belge_linklerini_parse(basvuru.diger_ekler),
     }
 
     # Atanmış değerlendiriciler
@@ -331,13 +401,16 @@ def mebbis_aktar():
     dosya.save(gecici_yol)
 
     try:
-        eklenen, atlanan = mebbis_json_yukle(gecici_yol)
-        if eklenen > 0 and atlanan > 0:
-            flash(f"{eklenen} yeni başvuru aktarıldı, {atlanan} mükerrer atlandı.", "success")
-        elif eklenen > 0:
-            flash(f"{eklenen} yeni başvuru aktarıldı!", "success")
-        elif atlanan > 0:
-            flash(f"Yeni başvuru yok. {atlanan} mevcut başvuru atlandı.", "info")
+        eklenen, atlanan, guncellenen = mebbis_json_yukle(gecici_yol)
+        mesajlar = []
+        if eklenen > 0:
+            mesajlar.append(f"{eklenen} yeni başvuru aktarıldı")
+        if guncellenen > 0:
+            mesajlar.append(f"{guncellenen} başvuru güncellendi")
+        if atlanan > 0:
+            mesajlar.append(f"{atlanan} başvuru değişmedi")
+        if mesajlar:
+            flash(", ".join(mesajlar) + ".", "success" if eklenen > 0 or guncellenen > 0 else "info")
         else:
             flash("Dosyada geçerli başvuru bulunamadı.", "warning")
     except Exception as e:
@@ -357,6 +430,22 @@ def basvuru_sil(id):
     db.session.commit()
     flash("Başvuru silindi.", "info")
     return redirect(url_for("dashboard"))
+
+
+@app.route("/belge-goster/<path:filename>")
+def serve_doc(filename):
+    """Belgeleri tarayıcıda açılacak (inline) şekilde sunar."""
+    # Eğer filename başında 'static/belgeler/' varsa temizle
+    clean_filename = filename.replace("static/belgeler/", "").replace("static\\belgeler\\", "")
+    
+    # Dosya yolunu oluştur
+    directory = os.path.join(BASE_DIR, "static", "belgeler")
+    
+    return send_from_directory(
+        directory,
+        clean_filename,
+        as_attachment=False
+    )
 
 
 # ─── TEMPLATE FİLTRELERİ ─────────────────────────────────────────────────────

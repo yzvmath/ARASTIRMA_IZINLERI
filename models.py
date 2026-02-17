@@ -58,6 +58,10 @@ class Basvuru(db.Model):
     belge_gonullu_katilim = db.Column(db.Text)
     belge_veli_onam = db.Column(db.Text)
     belge_olcek_izni = db.Column(db.Text)
+    diger_ekler = db.Column(db.Text)
+
+    # MEBBİS'ten çekilen değerlendirici bilgileri
+    degerlendiriciler_mebbis = db.Column(db.Text)  # "Ad Soyad (Durum) | Ad Soyad (Durum)"
 
     # Değerlendirme durumu
     degerlendirme_durumu = db.Column(db.String(20), default="bekliyor")  # bekliyor, devam, tamamlandi
