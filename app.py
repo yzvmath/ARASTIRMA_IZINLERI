@@ -30,12 +30,28 @@ with app.app_context():
 DEGERLENDIRICILER = [
     "FATİH DEVECİ",
     "MUHAMMET BAHADIR ŞAHİN",
-    "İDEM HODUL",
+    "ÇİĞDEM HODUL",
     "SEMA AKBAŞ",
 ]
 
 
 # ─── YARDIMCI FONKSİYONLAR ───────────────────────────────────────────────────
+
+def _tekil_pipe(deger):
+    """Pipe ile ayrılmış tekrarlayan değerleri tekilleştirir.
+    Örnek: 'Okul / Kurum | Okul / Kurum | Okul / Kurum' -> 'Okul / Kurum'
+    Farklı değerler varsa alt alta (newline) birleştirir.
+    """
+    if not deger:
+        return ""
+    parcalar = [p.strip() for p in deger.split("|") if p.strip()]
+    # Sırayı koruyarak tekilleri al
+    gorulen = []
+    for p in parcalar:
+        if p not in gorulen:
+            gorulen.append(p)
+    return "\n".join(gorulen)
+
 
 def mebbis_json_yukle(json_path):
     """MEBBIS'ten export edilen JSON dosyasını okuyup veritabanına aktarır."""
@@ -84,7 +100,7 @@ def mebbis_json_yukle(json_path):
             yazim_dili=detay.get("Araştırmanın Yazım Dili", ""),
             il_sayisi=detay.get("Uygulama Yapılacak İl Sayısı", ""),
             calisma_grubu=detay.get("Çalışma Grubu", ""),
-            teskilat_turu=detay.get("Teşkilat Türü", ""),
+            teskilat_turu=_tekil_pipe(detay.get("Teşkilat Türü", "")),
             meb_teskilati=detay.get("Uygulama Yapılacak MEB Teşkilatı", ""),
             okul_kurum_sayisi=detay.get("Uygulama Okul/Kurum Sayısı", ""),
             ozel_bilgiler=detay.get("Özel Bilgiler", ""),
