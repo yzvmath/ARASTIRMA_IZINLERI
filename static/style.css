@@ -260,6 +260,118 @@ body {
     font-size: 0.75rem;
 }
 
+/* ─── Değerlendirici Panel Kartları ──────────────────────────────────── */
+.deg-panel-card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    padding: 1rem;
+    height: 100%;
+}
+
+.deg-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.deg-panel-avatar {
+    font-size: 2rem;
+    color: #7c3aed;
+}
+
+.deg-panel-name {
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.deg-panel-total {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.deg-progress-row {
+    margin-bottom: 0.75rem;
+}
+
+.deg-progress {
+    height: 6px;
+    border-radius: 3px;
+    margin-bottom: 0.4rem;
+    background: var(--border-color);
+}
+
+.deg-stats-mini {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.deg-gorev-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.deg-gorev-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: var(--transition);
+}
+
+.deg-gorev-item:hover {
+    background: var(--border-color);
+}
+
+.deg-gorev-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.deg-gorev-text {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.deg-gorev-badge {
+    font-size: 0.65rem;
+    flex-shrink: 0;
+}
+
+/* ─── Yeni Badge ─────────────────────────────────────────────────────── */
+.yeni-badge {
+    font-size: 0.65rem;
+    animation: yeniPulse 2s infinite;
+}
+
+@keyframes yeniPulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
 /* ─── Info Items ──────────────────────────────────────────────────────── */
 .info-item {
     display: flex;

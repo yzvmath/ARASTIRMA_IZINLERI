@@ -9,8 +9,6 @@
         </h1>
         <p class="text-muted mb-0">MEBBIS araştırma izni başvurularını değerlendirin</p>
     </div>
-
-    <!-- MEBBIS Veri Aktarma -->
     <div>
         <button class="btn btn-primary btn-lg px-4" data-bs-toggle="modal" data-bs-target="#mebbisModal">
             <i class="bi bi-cloud-download me-2"></i>MEBBIS Verisi Aktar
@@ -69,7 +67,78 @@
     </div>
 </div>
 
-<!-- Başvuru Tablosu -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- DEĞERLENDİRİCİ İŞ YÜKÜ PANELİ                                        -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="card glass-card mb-4">
+    <div class="card-header section-header section-header--purple">
+        <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Değerlendirici İş Yükü</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            {% for dp in deg_panel %}
+            <div class="col-md-6 col-lg-3">
+                <div class="deg-panel-card">
+                    <div class="deg-panel-header">
+                        <i class="bi bi-person-circle deg-panel-avatar"></i>
+                        <div>
+                            <div class="deg-panel-name">{{ dp.ad }}</div>
+                            <div class="deg-panel-total">{{ dp.toplam }} görev</div>
+                        </div>
+                    </div>
+
+                    <!-- Mini progress bar -->
+                    {% if dp.toplam > 0 %}
+                    <div class="deg-progress-row">
+                        <div class="progress deg-progress">
+                            {% set pct_tam = (dp.tamamlandi / dp.toplam * 100)|round|int %}
+                            {% set pct_dev = (dp.devam / dp.toplam * 100)|round|int %}
+                            {% set pct_bek = (dp.bekliyor / dp.toplam * 100)|round|int %}
+                            <div class="progress-bar bg-success" style="width: {{ pct_tam }}%"
+                                title="Tamamlandı: {{ dp.tamamlandi }}"></div>
+                            <div class="progress-bar bg-info" style="width: {{ pct_dev }}%"
+                                title="Devam: {{ dp.devam }}"></div>
+                            <div class="progress-bar bg-warning" style="width: {{ pct_bek }}%"
+                                title="Bekliyor: {{ dp.bekliyor }}"></div>
+                        </div>
+                        <div class="deg-stats-mini">
+                            <span class="text-success"><i class="bi bi-check-circle-fill"></i> {{ dp.tamamlandi
+                                }}</span>
+                            <span class="text-info"><i class="bi bi-pencil-square"></i> {{ dp.devam }}</span>
+                            <span class="text-warning"><i class="bi bi-hourglass-split"></i> {{ dp.bekliyor }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Görev listesi -->
+                    <div class="deg-gorev-list">
+                        {% for g in dp.gorevler %}
+                        <a href="{{ url_for('degerlendirme', id=g.id) }}" class="deg-gorev-item">
+                            <span
+                                class="deg-gorev-dot bg-{{ 'success' if g.durum == 'tamamlandi' else 'info' if g.durum == 'devam' else 'warning' }}"></span>
+                            <span class="deg-gorev-text" title="{{ g.basvuru_no }}">{{ g.ad_soyad or g.basvuru_no
+                                }}</span>
+                            <span
+                                class="badge bg-{{ 'success' if g.durum == 'tamamlandi' else 'info' if g.durum == 'devam' else 'warning' }}-subtle text-{{ 'success' if g.durum == 'tamamlandi' else 'info' if g.durum == 'devam' else 'warning' }} deg-gorev-badge">
+                                {{ g.durum|durum_metin }}
+                            </span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-3">
+                        <i class="bi bi-inbox"></i> Atanmış görev yok
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- BAŞVURU TABLOSU                                                        -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
 <div class="card glass-card">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0"><i class="bi bi-table me-2"></i>Başvuru Listesi</h5>
@@ -100,7 +169,12 @@
                     {% for b in basvurular %}
                     <tr>
                         <td class="ps-4 text-muted">{{ loop.index }}</td>
-                        <td><span class="fw-semibold text-primary">{{ b.basvuru_no }}</span></td>
+                        <td>
+                            <span class="fw-semibold text-primary">{{ b.basvuru_no }}</span>
+                            {% if b.id in yeni_idler %}
+                            <span class="badge bg-danger ms-1 yeni-badge"><i class="bi bi-stars me-1"></i>Yeni</span>
+                            {% endif %}
+                        </td>
                         <td>{{ b.basvuru_tarihi or '-' }}</td>
                         <td>{{ b.ad_soyad or '-' }}</td>
                         <td><small>{{ b.telefon or '-' }}</small></td>
@@ -171,7 +245,7 @@
                     </div>
                     <div class="alert alert-info py-2">
                         <small><i class="bi bi-info-circle me-1"></i>
-                            Önce <code>mebbis_veri_cek.py</code> scriptini çalıştırıp JSON export edin.</small>
+                            Mevcut başvurular atlanır, sadece yeni başvurular eklenir.</small>
                     </div>
                 </div>
                 <div class="modal-footer">

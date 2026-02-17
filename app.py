@@ -6,7 +6,7 @@ Flask tabanlı web uygulaması.
 """
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from models import db, Basvuru, OnKontrol, KriterDegerlendirme, BasvuruDegerlendirici, ON_KONTROL_MADDELERI, KRITERLER
@@ -43,6 +43,7 @@ def mebbis_json_yukle(json_path):
         veriler = json.load(f)
 
     eklenen = 0
+    atlanan = 0
     for kayit in veriler:
         detay = kayit.get("detay_verileri", {})
         basvuru_no = detay.get("Başvuru Numarası", "")
@@ -52,6 +53,7 @@ def mebbis_json_yukle(json_path):
         # Aynı başvuru zaten varsa atla
         mevcut = Basvuru.query.filter_by(basvuru_no=basvuru_no).first()
         if mevcut:
+            atlanan += 1
             continue
 
         # Belge linklerini JSON'a çevir
@@ -122,7 +124,7 @@ def mebbis_json_yukle(json_path):
         eklenen += 1
 
     db.session.commit()
-    return eklenen
+    return eklenen, atlanan
 
 
 def belge_linklerini_parse(belge_str):
@@ -148,12 +150,55 @@ def dashboard():
     """Ana sayfa: Başvuru listesi."""
     basvurular = Basvuru.query.order_by(Basvuru.olusturma_tarihi.desc()).all()
 
+    # Yeni başvuru tespiti (son 24 saat içinde eklenenler)
+    yeni_esik = datetime.utcnow() - timedelta(hours=24)
+    yeni_idler = {b.id for b in basvurular if b.olusturma_tarihi and b.olusturma_tarihi >= yeni_esik}
+
     # Her değerlendiricinin iş yükünü hesapla
     is_yuku = {}
     for d in DEGERLENDIRICILER:
         is_yuku[d] = BasvuruDegerlendirici.query.filter_by(degerlendirici_adi=d).count()
 
-    return render_template("dashboard.html", basvurular=basvurular, is_yuku=is_yuku, degerlendiriciler=DEGERLENDIRICILER)
+    # Değerlendirici paneli verileri
+    deg_panel = []
+    for d in DEGERLENDIRICILER:
+        atamalar = BasvuruDegerlendirici.query.filter_by(degerlendirici_adi=d).all()
+        gorevler = []
+        toplam = len(atamalar)
+        bekliyor = devam = tamamlandi = 0
+        for atama in atamalar:
+            b = Basvuru.query.get(atama.basvuru_id)
+            if b:
+                durum = b.degerlendirme_durumu or "bekliyor"
+                if durum == "bekliyor":
+                    bekliyor += 1
+                elif durum == "devam":
+                    devam += 1
+                elif durum == "tamamlandi":
+                    tamamlandi += 1
+                gorevler.append({
+                    "id": b.id,
+                    "basvuru_no": b.basvuru_no,
+                    "ad_soyad": b.ad_soyad,
+                    "durum": durum,
+                })
+        deg_panel.append({
+            "ad": d,
+            "toplam": toplam,
+            "bekliyor": bekliyor,
+            "devam": devam,
+            "tamamlandi": tamamlandi,
+            "gorevler": gorevler,
+        })
+
+    return render_template(
+        "dashboard.html",
+        basvurular=basvurular,
+        is_yuku=is_yuku,
+        degerlendiriciler=DEGERLENDIRICILER,
+        yeni_idler=yeni_idler,
+        deg_panel=deg_panel,
+    )
 
 
 @app.route("/basvuru/<int:id>")
@@ -270,8 +315,15 @@ def mebbis_aktar():
     dosya.save(gecici_yol)
 
     try:
-        eklenen = mebbis_json_yukle(gecici_yol)
-        flash(f"{eklenen} yeni başvuru aktarıldı!", "success")
+        eklenen, atlanan = mebbis_json_yukle(gecici_yol)
+        if eklenen > 0 and atlanan > 0:
+            flash(f"{eklenen} yeni başvuru aktarıldı, {atlanan} mükerrer atlandı.", "success")
+        elif eklenen > 0:
+            flash(f"{eklenen} yeni başvuru aktarıldı!", "success")
+        elif atlanan > 0:
+            flash(f"Yeni başvuru yok. {atlanan} mevcut başvuru atlandı.", "info")
+        else:
+            flash("Dosyada geçerli başvuru bulunamadı.", "warning")
     except Exception as e:
         flash(f"Aktarma hatası: {str(e)}", "error")
     finally:
