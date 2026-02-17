@@ -54,22 +54,28 @@
                         <span class="info-value">{{ basvuru.arastirma_adi or '-' }}</span>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="info-item">
                         <span class="info-label">Niteliği</span>
                         <span class="info-value">{{ basvuru.arastirma_niteligi or '-' }}</span>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="info-item">
                         <span class="info-label">Araştırmacı</span>
                         <span class="info-value">{{ basvuru.ad_soyad or '-' }}</span>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="info-item">
                         <span class="info-label">TC Kimlik No</span>
                         <span class="info-value">{{ basvuru.tc_kimlik or '-' }}</span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="info-item">
+                        <span class="info-label">Telefon</span>
+                        <span class="info-value">{{ basvuru.telefon or '-' }}</span>
                     </div>
                 </div>
             </div>
@@ -111,7 +117,40 @@
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════════════ -->
-    <!-- BÖLÜM 2: ÖN KONTROL MADDELERİ                                    -->
+    <!-- BÖLÜM 2: DEĞERLENDİRİCİ ATAMA                                    -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="card glass-card mb-4">
+        <div class="card-header section-header section-header--purple">
+            <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Değerlendirici Atama <small class="opacity-75">(en
+                    fazla 2 kişi seçin)</small></h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                {% for d in degerlendiriciler %}
+                <div class="col-md-6 col-lg-3">
+                    <label class="deg-card {{ 'deg-card--selected' if d in atanmis_degerlendiriciler }}">
+                        <input type="checkbox" name="degerlendiriciler" value="{{ d }}" class="deg-checkbox"
+                            {{ 'checked' if d in atanmis_degerlendiriciler }}>
+                        <div class="deg-card-body">
+                            <i class="bi bi-person-circle deg-avatar"></i>
+                            <span class="deg-name">{{ d }}</span>
+                            <span
+                                class="deg-count badge bg-{{ 'danger' if is_yuku[d] > 5 else 'warning' if is_yuku[d] > 2 else 'success' }}-subtle text-{{ 'danger' if is_yuku[d] > 5 else 'warning' if is_yuku[d] > 2 else 'success' }}">
+                                {{ is_yuku[d] }} başvuru
+                            </span>
+                        </div>
+                    </label>
+                </div>
+                {% endfor %}
+            </div>
+            <div id="degUyari" class="alert alert-warning mt-3 d-none py-2">
+                <i class="bi bi-exclamation-triangle me-1"></i>En fazla 2 değerlendirici seçebilirsiniz!
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- BÖLÜM 3: ÖN KONTROL MADDELERİ                                    -->
     <!-- ═══════════════════════════════════════════════════════════════════ -->
     <div class="card glass-card mb-4">
         <div class="card-header section-header section-header--orange">
@@ -122,12 +161,11 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead>
                         <tr>
-                            <th class="ps-4" style="width: 280px;">Madde</th>
+                            <th class="ps-4" style="width: 320px;">Madde</th>
                             <th class="text-center" style="width: 80px;">VAR</th>
                             <th class="text-center" style="width: 80px;">YOK</th>
                             <th class="text-center" style="width: 80px;">N/A</th>
                             <th>Açıklama</th>
-                            <th style="width: 220px;">Değerlendirici</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -151,15 +189,6 @@
                                     value="{{ ok.aciklama or '' }}" class="form-control form-control-sm"
                                     placeholder="Açıklama...">
                             </td>
-                            <td>
-                                <select name="on_kontrol_degerlendirici_{{ ok.sira }}"
-                                    class="form-select form-select-sm">
-                                    <option value="">Seçiniz</option>
-                                    {% for d in degerlendiriciler %}
-                                    <option value="{{ d }}" {{ 'selected' if ok.degerlendirici==d }}>{{ d }}</option>
-                                    {% endfor %}
-                                </select>
-                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -169,7 +198,7 @@
     </div>
 
     <!-- ═══════════════════════════════════════════════════════════════════ -->
-    <!-- BÖLÜM 3: KRİTERLER (30 Madde)                                    -->
+    <!-- BÖLÜM 4: KRİTERLER (30 Madde)                                    -->
     <!-- ═══════════════════════════════════════════════════════════════════ -->
     <div class="card glass-card mb-4">
         <div class="card-header section-header section-header--green d-flex justify-content-between align-items-center">
@@ -231,6 +260,24 @@
 
 {% block scripts %}
 <script>
+    // Değerlendirici checkbox limiti (max 2)
+    const checkboxes = document.querySelectorAll('.deg-checkbox');
+    const uyari = document.getElementById('degUyari');
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function () {
+            const checked = document.querySelectorAll('.deg-checkbox:checked');
+            if (checked.length > 2) {
+                this.checked = false;
+                uyari.classList.remove('d-none');
+                setTimeout(() => uyari.classList.add('d-none'), 3000);
+                return;
+            }
+            // Kart seçili görünümü
+            this.closest('.deg-card').classList.toggle('deg-card--selected', this.checked);
+        });
+    });
+
     // Tümünü uygun yap
     document.getElementById('tumunuUygun')?.addEventListener('click', function () {
         document.querySelectorAll('.radio-uygun').forEach(r => {

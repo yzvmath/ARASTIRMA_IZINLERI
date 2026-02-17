@@ -9,7 +9,7 @@ import os
 from datetime import datetime
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
-from models import db, Basvuru, OnKontrol, KriterDegerlendirme, ON_KONTROL_MADDELERI, KRITERLER
+from models import db, Basvuru, OnKontrol, KriterDegerlendirme, BasvuruDegerlendirici, ON_KONTROL_MADDELERI, KRITERLER
 
 # ─── Uygulama Ayarları ───────────────────────────────────────────────────────
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -105,8 +105,7 @@ def mebbis_json_yukle(json_path):
                 sira=madde["sira"],
                 madde_adi=madde["ad"],
                 durum="",
-                aciklama="",
-                degerlendirici=""
+                aciklama=""
             )
             db.session.add(ok)
 
@@ -148,7 +147,13 @@ def belge_linklerini_parse(belge_str):
 def dashboard():
     """Ana sayfa: Başvuru listesi."""
     basvurular = Basvuru.query.order_by(Basvuru.olusturma_tarihi.desc()).all()
-    return render_template("dashboard.html", basvurular=basvurular)
+
+    # Her değerlendiricinin iş yükünü hesapla
+    is_yuku = {}
+    for d in DEGERLENDIRICILER:
+        is_yuku[d] = BasvuruDegerlendirici.query.filter_by(degerlendirici_adi=d).count()
+
+    return render_template("dashboard.html", basvurular=basvurular, is_yuku=is_yuku, degerlendiriciler=DEGERLENDIRICILER)
 
 
 @app.route("/basvuru/<int:id>")
@@ -181,6 +186,14 @@ def degerlendirme(id):
         "olcek_izni": belge_linklerini_parse(basvuru.belge_olcek_izni),
     }
 
+    # Atanmış değerlendiriciler
+    atanmis = [bd.degerlendirici_adi for bd in basvuru.degerlendiriciler]
+
+    # Her değerlendiricinin iş yükünü hesapla
+    is_yuku = {}
+    for d in DEGERLENDIRICILER:
+        is_yuku[d] = BasvuruDegerlendirici.query.filter_by(degerlendirici_adi=d).count()
+
     return render_template(
         "degerlendirme.html",
         basvuru=basvuru,
@@ -189,6 +202,8 @@ def degerlendirme(id):
         belgeler=belgeler,
         degerlendiriciler=DEGERLENDIRICILER,
         on_kontrol_maddeleri=ON_KONTROL_MADDELERI,
+        atanmis_degerlendiriciler=atanmis,
+        is_yuku=is_yuku,
     )
 
 
@@ -197,6 +212,14 @@ def degerlendirme_kaydet(id):
     """Değerlendirme formunu kaydet."""
     basvuru = Basvuru.query.get_or_404(id)
 
+    # Değerlendiricileri kaydet (checkbox'lardan)
+    secilen = request.form.getlist("degerlendiriciler")
+    # Mevcut atamaları temizle
+    BasvuruDegerlendirici.query.filter_by(basvuru_id=id).delete()
+    for deg_adi in secilen[:2]:  # En fazla 2
+        bd = BasvuruDegerlendirici(basvuru_id=id, degerlendirici_adi=deg_adi)
+        db.session.add(bd)
+
     # Ön kontrolleri kaydet
     for madde in ON_KONTROL_MADDELERI:
         sira = madde["sira"]
@@ -204,7 +227,6 @@ def degerlendirme_kaydet(id):
         if ok:
             ok.durum = request.form.get(f"on_kontrol_durum_{sira}", "")
             ok.aciklama = request.form.get(f"on_kontrol_aciklama_{sira}", "")
-            ok.degerlendirici = request.form.get(f"on_kontrol_degerlendirici_{sira}", "")
 
     # Kriterleri kaydet
     for ks in KRITERLER:

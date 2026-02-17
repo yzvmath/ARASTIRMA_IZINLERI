@@ -67,6 +67,7 @@ class Basvuru(db.Model):
     # İlişkiler
     on_kontroller = db.relationship("OnKontrol", backref="basvuru", cascade="all, delete-orphan", lazy=True)
     kriterler = db.relationship("KriterDegerlendirme", backref="basvuru", cascade="all, delete-orphan", lazy=True)
+    degerlendiriciler = db.relationship("BasvuruDegerlendirici", backref="basvuru", cascade="all, delete-orphan", lazy=True)
 
     def __repr__(self):
         return f"<Basvuru {self.basvuru_no}>"
@@ -99,7 +100,6 @@ class OnKontrol(db.Model):
     madde_adi = db.Column(db.String(200))
     durum = db.Column(db.String(10))                # VAR, YOK, N/A
     aciklama = db.Column(db.Text)
-    degerlendirici = db.Column(db.String(200))
 
     __table_args__ = (db.UniqueConstraint("basvuru_id", "sira", name="uq_on_kontrol"),)
 
@@ -168,3 +168,14 @@ class KriterDegerlendirme(db.Model):
     aciklama = db.Column(db.Text)
 
     __table_args__ = (db.UniqueConstraint("basvuru_id", "kriter_no", name="uq_kriter"),)
+
+
+class BasvuruDegerlendirici(db.Model):
+    """Her başvuruya atanan değerlendiriciler (en fazla 2)."""
+    __tablename__ = "basvuru_degerlendirici"
+
+    id = db.Column(db.Integer, primary_key=True)
+    basvuru_id = db.Column(db.Integer, db.ForeignKey("basvuru.id"), nullable=False)
+    degerlendirici_adi = db.Column(db.String(200), nullable=False)
+
+    __table_args__ = (db.UniqueConstraint("basvuru_id", "degerlendirici_adi", name="uq_basvuru_deg"),)

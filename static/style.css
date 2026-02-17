@@ -202,6 +202,64 @@ body {
     background: linear-gradient(135deg, #16a34a, #22c55e) !important;
 }
 
+.section-header--purple {
+    background: linear-gradient(135deg, #7c3aed, #a855f7) !important;
+}
+
+/* ─── Değerlendirici Kartları ─────────────────────────────────────────── */
+.deg-card {
+    display: block;
+    cursor: pointer;
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--border-color);
+    background: var(--bg-primary);
+    transition: var(--transition);
+    text-align: center;
+}
+
+.deg-card:hover {
+    border-color: #a855f7;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.15);
+    transform: translateY(-2px);
+}
+
+.deg-card--selected {
+    border-color: #7c3aed;
+    background: rgba(124, 58, 237, 0.06);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+.deg-card-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.deg-checkbox {
+    display: none;
+}
+
+.deg-avatar {
+    font-size: 2rem;
+    color: #7c3aed;
+    opacity: 0.6;
+}
+
+.deg-card--selected .deg-avatar {
+    opacity: 1;
+}
+
+.deg-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.deg-count {
+    font-size: 0.75rem;
+}
+
 /* ─── Info Items ──────────────────────────────────────────────────────── */
 .info-item {
     display: flex;
@@ -457,8 +515,15 @@ body {
 
 /* ─── Animations ──────────────────────────────────────────────────────── */
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .card {
@@ -469,6 +534,14 @@ body {
     animation: fadeIn 0.4s ease-out;
 }
 
-.stat-card:nth-child(2) { animation-delay: 0.1s; }
-.stat-card:nth-child(3) { animation-delay: 0.2s; }
-.stat-card:nth-child(4) { animation-delay: 0.3s; }
+.stat-card:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.stat-card:nth-child(3) {
+    animation-delay: 0.2s;
+}
+
+.stat-card:nth-child(4) {
+    animation-delay: 0.3s;
+}

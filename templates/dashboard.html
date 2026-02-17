@@ -88,8 +88,10 @@
                         <th>Başvuru No</th>
                         <th>Tarih</th>
                         <th>Araştırmacı</th>
+                        <th>Telefon</th>
                         <th>Araştırma Adı</th>
                         <th>Nitelik</th>
+                        <th>Değerlendiriciler</th>
                         <th>Durum</th>
                         <th class="text-center">İşlem</th>
                     </tr>
@@ -101,10 +103,20 @@
                         <td><span class="fw-semibold text-primary">{{ b.basvuru_no }}</span></td>
                         <td>{{ b.basvuru_tarihi or '-' }}</td>
                         <td>{{ b.ad_soyad or '-' }}</td>
-                        <td class="text-truncate" style="max-width: 300px;" title="{{ b.arastirma_adi }}">{{
+                        <td><small>{{ b.telefon or '-' }}</small></td>
+                        <td class="text-truncate" style="max-width: 250px;" title="{{ b.arastirma_adi }}">{{
                             b.arastirma_adi or '-' }}</td>
                         <td><span class="badge bg-secondary-subtle text-secondary">{{ b.arastirma_niteligi or '-'
                                 }}</span></td>
+                        <td>
+                            {% if b.degerlendiriciler %}
+                            {% for bd in b.degerlendiriciler %}
+                            <span class="badge bg-primary-subtle text-primary">{{ bd.degerlendirici_adi }}</span>
+                            {% endfor %}
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
                         <td>
                             <span
                                 class="badge bg-{{ b.degerlendirme_durumu|durum_renk }}-subtle text-{{ b.degerlendirme_durumu|durum_renk }}">
