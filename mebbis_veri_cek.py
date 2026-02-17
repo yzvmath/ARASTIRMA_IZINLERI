@@ -15,6 +15,7 @@ Gereksinimler:
 import time
 import os
 import re
+import json
 from datetime import datetime
 import traceback
 
@@ -618,6 +619,29 @@ def excel_olustur(basliklar, tum_satirlar):
     return OUTPUT_FILE
 
 
+def json_export(basliklar, tum_satirlar):
+    """
+    Tüm verileri JSON dosyasına aktarır.
+    Flask uygulamasına veri aktarmak için kullanılır.
+    """
+    json_dosya = OUTPUT_FILE.replace(".xlsx", ".json")
+    print(f"\n📝 JSON dosyası oluşturuluyor: {json_dosya}")
+
+    sonuc = []
+    for satir in tum_satirlar:
+        kayit = {
+            "tablo_verileri": dict(zip(basliklar, satir.get("hucre_metinleri", []))),
+            "detay_verileri": satir.get("detay_verileri", {}),
+        }
+        sonuc.append(kayit)
+
+    with open(json_dosya, "w", encoding="utf-8") as f:
+        json.dump(sonuc, f, ensure_ascii=False, indent=2)
+
+    print(f"   ✅ JSON dosyası kaydedildi: {json_dosya}")
+    return json_dosya
+
+
 def main():
     print("=" * 60)
     print("   MEBBIS Araştırma İzni - Bekleyen İşlemler")
@@ -799,9 +823,13 @@ def main():
         # 10) Excel'e aktar
         excel_dosya = excel_olustur(basliklar, tum_satirlar)
 
+        # 11) JSON'a aktar (Flask için)
+        json_dosya = json_export(basliklar, tum_satirlar)
+
         print("\n" + "=" * 60)
         print(f"   🎉 İŞLEM TAMAMLANDI!")
         print(f"   Excel dosyası: {excel_dosya}")
+        print(f"   JSON dosyası : {json_dosya}")
         print("=" * 60)
 
     except KeyboardInterrupt:

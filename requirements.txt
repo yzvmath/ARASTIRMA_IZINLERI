@@ -1,3 +1,6 @@
 selenium
 openpyxl
 webdriver-manager
+flask
+flask-sqlalchemy
+pdfplumber

@@ -14,6 +14,13 @@ venv/
 .vscode/
 .idea/
 
+# Database
+*.db
+
+# Temp & JSON export
+temp_*.json
+mebbis_verileri_*.json
+
 # OS
 Thumbs.db
 .DS_Store

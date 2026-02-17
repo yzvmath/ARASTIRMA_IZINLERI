@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% block title %}{{ basvuru.basvuru_no }} - Değerlendirme{% endblock %}
+
+{% block content %}
+<form action="{{ url_for('degerlendirme_kaydet', id=basvuru.id) }}" method="POST" id="degerlendirmeForm">
+
+    <!-- Üst Bar: Geri + Kaydet -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Listeye Dön
+        </a>
+        <div class="d-flex gap-2">
+            <span
+                class="badge bg-{{ basvuru.degerlendirme_durumu|durum_renk }}-subtle text-{{ basvuru.degerlendirme_durumu|durum_renk }} fs-6 py-2 px-3">
+                <i class="bi {{ basvuru.degerlendirme_durumu|durum_ikon }} me-1"></i>
+                {{ basvuru.degerlendirme_durumu|durum_metin }}
+            </span>
+            <button type="submit" class="btn btn-success btn-lg px-4">
+                <i class="bi bi-check2-all me-1"></i>Kaydet
+            </button>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- BÖLÜM 1: BAŞVURU BİLGİLERİ                                       -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="card glass-card mb-4">
+        <div class="card-header section-header section-header--blue">
+            <h5 class="mb-0"><i class="bi bi-person-badge me-2"></i>Başvuru Bilgileri</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="info-item">
+                        <span class="info-label">Başvuru No</span>
+                        <span class="info-value fw-bold text-primary">{{ basvuru.basvuru_no }}</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="info-item">
+                        <span class="info-label">Başvuru Tarihi</span>
+                        <span class="info-value">{{ basvuru.basvuru_tarihi or '-' }}</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="info-item">
+                        <span class="info-label">Uygulama Yapılacak Kurum Türü</span>
+                        <span class="info-value">{{ basvuru.teskilat_turu or '-' }}</span>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="info-item">
+                        <span class="info-label">Araştırmanın Adı</span>
+                        <span class="info-value">{{ basvuru.arastirma_adi or '-' }}</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="info-item">
+                        <span class="info-label">Niteliği</span>
+                        <span class="info-value">{{ basvuru.arastirma_niteligi or '-' }}</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="info-item">
+                        <span class="info-label">Araştırmacı</span>
+                        <span class="info-value">{{ basvuru.ad_soyad or '-' }}</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="info-item">
+                        <span class="info-label">TC Kimlik No</span>
+                        <span class="info-value">{{ basvuru.tc_kimlik or '-' }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Belgeler -->
+            {% if belgeler %}
+            <hr class="my-3">
+            <h6 class="text-muted mb-3"><i class="bi bi-file-earmark-text me-1"></i>Yüklenen Belgeler</h6>
+            <div class="row g-2">
+                {% set belge_listesi = [
+                ('Araştırma/Proje Bilgileri', belgeler.arastirma_proje),
+                ('Veri Toplama Araçları', belgeler.veri_toplama),
+                ('Taahhütname', belgeler.taahhutname),
+                ('Etik Kurul Onay', belgeler.etik_kurul),
+                ('Gönüllü Katılım Formu', belgeler.gonullu_katilim),
+                ('Veli Onam Formu', belgeler.veli_onam),
+                ('Ölçek Kullanım İzni', belgeler.olcek_izni),
+                ] %}
+                {% for baslik, linkler in belge_listesi %}
+                {% if linkler %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="belge-card">
+                        <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
+                        <div>
+                            <strong>{{ baslik }}</strong>
+                            {% for link in linkler %}
+                            <br><a href="{{ link.url }}" target="_blank" class="belge-link">
+                                <i class="bi bi-box-arrow-up-right"></i> {{ link.text }}
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- BÖLÜM 2: ÖN KONTROL MADDELERİ                                    -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="card glass-card mb-4">
+        <div class="card-header section-header section-header--orange">
+            <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Ön Kontrol Maddeleri</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-4" style="width: 280px;">Madde</th>
+                            <th class="text-center" style="width: 80px;">VAR</th>
+                            <th class="text-center" style="width: 80px;">YOK</th>
+                            <th class="text-center" style="width: 80px;">N/A</th>
+                            <th>Açıklama</th>
+                            <th style="width: 220px;">Değerlendirici</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ok in on_kontroller %}
+                        <tr>
+                            <td class="ps-4 fw-medium">{{ ok.madde_adi }}</td>
+                            <td class="text-center">
+                                <input type="radio" name="on_kontrol_durum_{{ ok.sira }}" value="VAR"
+                                    class="form-check-input radio-var" {{ 'checked' if ok.durum=='VAR' }}>
+                            </td>
+                            <td class="text-center">
+                                <input type="radio" name="on_kontrol_durum_{{ ok.sira }}" value="YOK"
+                                    class="form-check-input radio-yok" {{ 'checked' if ok.durum=='YOK' }}>
+                            </td>
+                            <td class="text-center">
+                                <input type="radio" name="on_kontrol_durum_{{ ok.sira }}" value="N/A"
+                                    class="form-check-input radio-na" {{ 'checked' if ok.durum=='N/A' }}>
+                            </td>
+                            <td>
+                                <input type="text" name="on_kontrol_aciklama_{{ ok.sira }}"
+                                    value="{{ ok.aciklama or '' }}" class="form-control form-control-sm"
+                                    placeholder="Açıklama...">
+                            </td>
+                            <td>
+                                <select name="on_kontrol_degerlendirici_{{ ok.sira }}"
+                                    class="form-select form-select-sm">
+                                    <option value="">Seçiniz</option>
+                                    {% for d in degerlendiriciler %}
+                                    <option value="{{ d }}" {{ 'selected' if ok.degerlendirici==d }}>{{ d }}</option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- BÖLÜM 3: KRİTERLER (30 Madde)                                    -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="card glass-card mb-4">
+        <div class="card-header section-header section-header--green d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-check2-square me-2"></i>Değerlendirme Kriterleri</h5>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-outline-light" id="tumunuUygun">
+                    <i class="bi bi-check-all me-1"></i>Tümünü Uygun
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-light" id="tumunuTemizle">
+                    <i class="bi bi-eraser me-1"></i>Temizle
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="kriterTablosu">
+                    <thead>
+                        <tr>
+                            <th class="ps-4 text-center" style="width: 60px;">No</th>
+                            <th>Kriter</th>
+                            <th class="text-center" style="width: 90px;">Uygun</th>
+                            <th class="text-center" style="width: 90px;">Uygun Değil</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for k in kriterler %}
+                        <tr
+                            class="kriter-row {{ 'kriter-uygun' if k.sonuc == 'UYGUN' }}{{ 'kriter-uygun-degil' if k.sonuc == 'UYGUN_DEGIL' }}">
+                            <td class="ps-4 text-center">
+                                <span class="kriter-no">{{ k.no }}</span>
+                            </td>
+                            <td class="kriter-metin">{{ k.metin }}</td>
+                            <td class="text-center">
+                                <input type="radio" name="kriter_sonuc_{{ k.no }}" value="UYGUN"
+                                    class="form-check-input radio-uygun" {{ 'checked' if k.sonuc=='UYGUN' }}>
+                            </td>
+                            <td class="text-center">
+                                <input type="radio" name="kriter_sonuc_{{ k.no }}" value="UYGUN_DEGIL"
+                                    class="form-check-input radio-uygun-degil" {{ 'checked' if k.sonuc=='UYGUN_DEGIL'
+                                    }}>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alt Kaydet Butonu -->
+    <div class="d-flex justify-content-end mb-4">
+        <button type="submit" class="btn btn-success btn-lg px-5">
+            <i class="bi bi-check2-all me-2"></i>Değerlendirmeyi Kaydet
+        </button>
+    </div>
+
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Tümünü uygun yap
+    document.getElementById('tumunuUygun')?.addEventListener('click', function () {
+        document.querySelectorAll('.radio-uygun').forEach(r => {
+            r.checked = true;
+            r.closest('tr').className = 'kriter-row kriter-uygun';
+        });
+    });
+
+    // Temizle
+    document.getElementById('tumunuTemizle')?.addEventListener('click', function () {
+        document.querySelectorAll('#kriterTablosu input[type="radio"]').forEach(r => {
+            r.checked = false;
+        });
+        document.querySelectorAll('.kriter-row').forEach(row => {
+            row.className = 'kriter-row';
+        });
+    });
+
+    // Satır renklendirme
+    document.querySelectorAll('#kriterTablosu input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', function () {
+            const row = this.closest('tr');
+            row.classList.remove('kriter-uygun', 'kriter-uygun-degil');
+            if (this.value === 'UYGUN') {
+                row.classList.add('kriter-uygun');
+            } else if (this.value === 'UYGUN_DEGIL') {
+                row.classList.add('kriter-uygun-degil');
+            }
+        });
+    });
+
+    // Form değişiklik uyarısı
+    let formChanged = false;
+    document.getElementById('degerlendirmeForm').addEventListener('change', () => formChanged = true);
+    window.addEventListener('beforeunload', (e) => {
+        if (formChanged) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+    document.getElementById('degerlendirmeForm').addEventListener('submit', () => formChanged = false);
+</script>
+{% endblock %}
