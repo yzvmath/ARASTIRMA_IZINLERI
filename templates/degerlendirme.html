@@ -96,28 +96,55 @@
             <h6 class="text-muted mb-3"><i class="bi bi-file-earmark-text me-1"></i>Yüklenen Belgeler</h6>
             <div class="row g-2">
                 {% set belge_listesi = [
-                ('Araştırma/Proje Bilgileri', belgeler.arastirma_proje),
-                ('Veri Toplama Araçları', belgeler.veri_toplama),
-                ('Taahhütname', belgeler.taahhutname),
-                ('Etik Kurul Onay', belgeler.etik_kurul),
-                ('Gönüllü Katılım Formu', belgeler.gonullu_katilim),
+                ('Araştırma Proje Bilgileri', belgeler.arastirma_proje),
+                ('Veri Toplama Aracı / Araçları', belgeler.veri_toplama),
+                ('Araştırma Uygulama İzni Başvuru Taahhütnamesi', belgeler.taahhutname),
+                ('Araştırma/Tıbbi Araştırmalar İçin Etik Kuruldan Alınan Onay Belgesi', belgeler.etik_kurul),
+                ('Ayrıntılı Bilgilendirme ve Gönüllü Katılım Formu', belgeler.gonullu_katilim),
                 ('Veli Onam Formu', belgeler.veli_onam),
-                ('Ölçek Kullanım İzni', belgeler.olcek_izni),
-                ('Diğer Ekler', belgeler.diger_ekler),
+                ('Alanyazında Daha Önce Kullanılmış Veri Toplama Aracı Tercih Ediliyor İse Kullanıma İlişkin İzin',
+                belgeler.olcek_izni),
+                ('Enstitü Yönetim Kurulu Kararı', belgeler.enstitu_karari),
                 ] %}
                 {% for baslik, linkler in belge_listesi %}
                 {% if linkler %}
                 <div class="col-md-6 col-lg-4">
-                    <div class="belge-card">
-                        <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
-                        <div>
-                            <strong>{{ baslik }}</strong>
-                            {% for link in linkler %}
-                            <br><button type="button" class="btn btn-link p-0 belge-link"
-                                onclick="belgeGoster('{{ '/belge-goster/' + link.local_path if link.local_path else link.url }}', '{{ baslik }} - {{ link.text }}')">
-                                <i class="bi bi-box-arrow-up-right"></i> {{ link.text }}
-                            </button>
-                            {% endfor %}
+                    <div class="belge-card h-100">
+                        <div class="d-flex align-items-start">
+                            {% if 'Araştırma Proje' in baslik %}
+                            <i class="bi bi-file-earmark-pdf text-primary me-2 fs-5"></i>
+                            {% elif 'Veri Toplama Aracı' in baslik %}
+                            <i class="bi bi-card-checklist text-success me-2 fs-5"></i>
+                            {% elif 'Taahhütname' in baslik %}
+                            <i class="bi bi-file-earmark-check text-success me-2 fs-5"></i>
+                            {% elif 'Etik Kurul' in baslik %}
+                            <i class="bi bi-shield-check text-warning me-2 fs-5"></i>
+                            {% elif 'Gönüllü Katılım' in baslik %}
+                            <i class="bi bi-person-check text-info me-2 fs-5"></i>
+                            {% elif 'Veli Onam' in baslik %}
+                            <i class="bi bi-people text-info me-2 fs-5"></i>
+                            {% elif 'İzin' in baslik %}
+                            <i class="bi bi-file-earmark-lock text-danger me-2 fs-5"></i>
+                            {% else %}
+                            <i class="bi bi-file-earmark-text text-secondary me-2 fs-5"></i>
+                            {% endif %}
+                            <div class="w-100">
+                                <div class="fw-bold text-dark mb-1" style="font-size: 0.85rem;">{{ baslik }}</div>
+                                {% for link in linkler %}
+                                <div class="mb-1 d-flex align-items-center">
+                                    <i class="bi bi-file-earmark-arrow-down text-muted small me-1"></i>
+                                    {% set final_url = link.url if (link.url.startswith('http') or not link.local_path)
+                                    else ("/belge-goster/" + link.local_path) %}
+                                    <button type="button"
+                                        class="btn btn-link p-0 text-start text-decoration-none text-truncate flex-grow-1"
+                                        style="font-size: 0.8rem; max-width: 100%;"
+                                        title="{{ link.clean_text if link.clean_text else link.text }}"
+                                        onclick='belgeGoster({{ final_url|tojson }}, {{ (baslik + " - " + (link.clean_text if link.clean_text else link.text))|tojson }})'>
+                                        {{ link.clean_text if link.clean_text else link.text }}
+                                    </button>
+                                </div>
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
                 </div>

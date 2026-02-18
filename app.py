@@ -8,7 +8,7 @@ import json
 import os
 from datetime import datetime, timedelta
 
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, session
 from models import db, Basvuru, OnKontrol, KriterDegerlendirme, BasvuruDegerlendirici, ON_KONTROL_MADDELERI, KRITERLER
 
 # ─── Uygulama Ayarları ───────────────────────────────────────────────────────
@@ -57,8 +57,11 @@ def _normalize_key(key):
     """Büyük harf ve Türkçe karakter dönüşümü yaparak temizler."""
     if not key:
         return ""
-    # Basitçe \n ve boşlukları temizle, büyük harfe çevir
-    return key.replace("\n", " ").replace("İ", "I").upper().strip()
+    # Türkçe karakterleri ASCII karşılıklarına çevir
+    key = key.replace("İ", "I").replace("ı", "I").replace("Ğ", "G").replace("ğ", "G")\
+             .replace("Ü", "U").replace("ü", "U").replace("Ş", "S").replace("ş", "S")\
+             .replace("Ö", "O").replace("ö", "O").replace("Ç", "C").replace("ç", "C")
+    return key.upper().strip()
 
 
 def _get_val_robust(kayit, detay_keys, tablo_keys=None):
@@ -172,7 +175,8 @@ def mebbis_json_yukle(json_path):
     eklenen = 0
     atlanan = 0
     guncellenen = 0
-    
+    yeni_idler = []
+
     for kayit in veriler:
         detay = kayit.get("detay_verileri", {})
         
@@ -229,23 +233,125 @@ def mebbis_json_yukle(json_path):
             "uygulama_suresi": _get_val_robust(kayit, "Uygulama Süresi", "SÜRE"),
         }
 
-        # Belge linkleri (Bunlar zaten Link formatında geliyor, direkt detaydan alıyoruz)
-        belge_keys = {
-            "belge_arastirma_proje": "Araştırma Proje Bilgileri (Link)",
-            "belge_veri_toplama": "Veri Toplama Aracı (Link)",
-            "belge_taahhutname": "Taahhütname (Link)",
-            "belge_etik_kurul": "Etik Kurul Onay (Link)",
-            "belge_gonullu_katilim": "Bilgilendirme ve Gönüllü Katılım Formu (Link)",
-            "belge_veli_onam": "Veli Onam Formu (Link)",
-            "belge_olcek_izni": "Ölçek Kullanım İzni (Link)",
-            "diger_ekler": "Diğer Ekler",
+        # ───────────────────────────────────────────────────────────────────────────
+        # BELGE AYRIŞTIRMA VE EŞLEŞTİRME (Refactored)
+        # ───────────────────────────────────────────────────────────────────────────
+        # Hedef: Tüm benzersiz belgeleri bul, kategorilere dağıt, kalanları "Diğer"e at.
+        
+        tum_belgeler = []
+        gordugum_urller = set()
+
+        # 1. Kayıt içindeki TÜM linkli alanları tara ve benzersizleri topla
+        def _belgeleri_topla(obj):
+            if isinstance(obj, dict):
+                for k, v in obj.items():
+                    if isinstance(v, list):
+                        for item in v:
+                            if isinstance(item, dict) and "url" in item and "text" in item:
+                                url = item["url"].strip()
+                                text = item["text"].strip()
+                                
+                                # Text temizliği
+                                clean_text = text
+                                # Hem kısa (-) hem uzun (–) tireyi handle et
+                                separator = None
+                                if " - " in text: separator = " - "
+                                elif " – " in text: separator = " – "
+                                
+                                if separator:
+                                    parts = text.split(separator, 1)
+                                    if len(parts) > 1:
+                                        clean_text = parts[1].strip()
+                                
+                                # Eğer temizleme sonucu boş kaldıysa (veya ayırıcı yoksa) orijinali koru
+                                if not clean_text:
+                                    clean_text = text
+                                
+                                # Uzantı temizliği (örn: .pdf, .docx sil)
+                                base_text = str(clean_text)
+                                lower_text = base_text.lower()
+                                for ext in [".pdf", ".docx", ".doc", ".jpg", ".jpeg", ".png"]:
+                                    if lower_text.endswith(ext):
+                                        base_text = base_text[:-len(ext)].strip()
+                                        break
+                                
+                                # Filtreli: "Ana Başvuru" vb. gereksiz dosyaları atla
+                                id_text = _normalize_key(base_text)
+                                if id_text in ["ANA BASVURU", "ANA BAŞVURU", "BASVURU FORMU"]:
+                                    continue
+
+                                item["clean_text"] = base_text # Görüntülenen temiz isim
+                                
+                                # Benzersizlik İçin Normalize Edilmiş Kimlikler
+                                # URL'deki asıl dosya ID'sini çek (download/ sonrasındaki benzersiz kod)
+                                if "/download/" in url:
+                                    id_url = url.split("/download/")[1].split("?")[0]
+                                else:
+                                    id_url = url.split("?")[0].replace("http://", "").replace("https://", "").replace("\\", "/").rstrip("/")
+
+                                if id_url not in gordugum_urller:
+                                    gordugum_urller.add(id_url)
+                                    tum_belgeler.append(item)
+                    elif isinstance(v, dict):
+                        _belgeleri_topla(v)
+        
+        _belgeleri_topla(detay)
+
+        # 2. Kategorilere göre dağıtılacak kutular
+        dagitim = {
+            "belge_arastirma_proje": [],
+            "belge_veri_toplama": [],
+            "belge_taahhutname": [],
+            "belge_etik_kurul": [],
+            "belge_gonullu_katilim": [],
+            "belge_veli_onam": [],
+            "belge_olcek_izni": [],
+            "belge_enstitu_karari": [],
+            "diger_ekler": []
         }
 
-        if basvuru_no == "MEB.TT.2025.044260.02":
-             # Bu kaydın detay verileri boş olduğu için Ad Soyad'ı manuel set etme şansımız yok
-             # Ancak tablo verileri ile en azından kaydı oluşturabiliriz.
-             pass
+        from collections import OrderedDict
+        # 3. Anahtar kelimeler (MEBBİS Standart İsimleri ve Kısaltmalar)
+        # Öncelik sırası önemlidir (Yukarıdaki kategoriler önce kontrol edilir)
+        kelimeler = OrderedDict([
+            ("belge_taahhutname", ["TAAHHUTNAME"]),
+            ("belge_etik_kurul", ["ETIK KURUL", "ONAY BELGESI"]),
+            ("belge_gonullu_katilim", ["GONULLU KATILIM", "BILGILENDIRME", "AYRINTILI BILGILENDIRME"]),
+            ("belge_veli_onam", ["VELI ONAM", "VELI IZIN"]),
+            ("belge_olcek_izni", ["OLCEK KULLANIM", "ALANYAZIN", "OLCEGI IZNI", "OLCEK IZNI", "KULLANIMA ILISKIN IZIN"]),
+            ("belge_enstitu_karari", ["ENSTITU", "YONETIM KURULU", "YK KARARI"]),
+            ("belge_arastirma_proje", ["ARASTIRMA PROJE", "PROJE BILGILERI", "TEZ ONERISI", "OZGECMIS", "CV"]),
+            ("belge_veri_toplama", ["VERI TOPLAMA", "ANKET", "MULAKAT", "GORUSME", "SORU", "VTA", "OLCEK"])
+        ])
 
+        # 4. Her bir belgeyi uygun kutuya at (Sırayla, ilk uyan alır)
+        for belge in tum_belgeler:
+            txt_norm = _normalize_key(belge["text"]) # Tüm text üzerinden ara
+            esanlesti = False
+            
+            for db_field, keys in kelimeler.items():
+                if any(k in txt_norm for k in keys):
+                    dagitim[db_field].append(belge)
+                    esanlesti = True
+                    break # Bir kategoriye girdiyse diğerlerine bakma
+            
+            if not esanlesti:
+                # Hiçbir kategoriye uymadıysa Araştırma/Proje Bilgileri'ne ekle (Diğer Ekler başlığı kaldırıldı)
+                dagitim["belge_arastirma_proje"].append(belge)
+
+        # 5. DB Formatına Çevir (List -> JSON String)
+        # 5. DB Kaydını Belirle (Güncelleme mi Yeni mi?)
+        target_obj = mevcut
+        is_new = False
+        
+        if not target_obj:
+            target_obj = Basvuru(basvuru_no=basvuru_no)
+            is_new = True
+            db.session.add(target_obj)
+        
+        # 6. Verileri Uygula (Metin Alanları)
+        is_changed = False
+        
         # MEBBIS Durumunu İç Duruma Eşle
         mebbis_durum = yeni_veri.get("basvuru_durumu", "").upper()
         if "ONAY" in mebbis_durum:
@@ -255,52 +361,42 @@ def mebbis_json_yukle(json_path):
         else:
             yeni_veri["degerlendirme_durumu"] = "bekliyor"
 
-        if mevcut:
-            is_changed = False
-            # Metin alanlarını güncelle
-            for db_field, val in yeni_veri.items():
-                old_val = getattr(mevcut, db_field, "") or ""
-                if val and val != old_val:
-                    setattr(mevcut, db_field, val)
-                    is_changed = True
-            
-            # Belge alanlarını güncelle
-            for db_field, json_key in belge_keys.items():
-                new_val_raw = detay.get(json_key)
-                if new_val_raw:
-                    new_val_json = belge_json(new_val_raw)
-                    old_val_json = getattr(mevcut, db_field, "") or ""
-                    if new_val_json and new_val_json != old_val_json:
-                        setattr(mevcut, db_field, new_val_json)
-                        is_changed = True
-            
-            if is_changed:
-                mevcut.guncelleme_tarihi = datetime.utcnow()
-                guncellenen += 1
-            else:
-                atlanan += 1
-        else:
-            # Yeni Başvuru
-            basvuru = Basvuru(basvuru_no=basvuru_no, **yeni_veri)
-            
-            # Belgeleri ekle
-            for db_field, json_key in belge_keys.items():
-                setattr(basvuru, db_field, belge_json(detay.get(json_key)))
-            
-            db.session.add(basvuru)
-            db.session.flush()
+        for db_field, val in yeni_veri.items():
+            old_val = getattr(target_obj, db_field, "") or ""
+            if val and str(val) != str(old_val):
+                setattr(target_obj, db_field, val)
+                is_changed = True
 
+        # 7. Belgeleri Uygula (JSON String)
+        def liste_to_json(liste):
+            if not liste: return None
+            return json.dumps(liste, ensure_ascii=False)
+
+        for db_field, liste in dagitim.items():
+            new_val_json = liste_to_json(liste)
+            old_val_json = getattr(target_obj, db_field, "") or ""
+            if new_val_json != old_val_json:
+                setattr(target_obj, db_field, new_val_json)
+                is_changed = True
+            
+        # 8. Kaydet ve Sayaçları Güncelle
+        if is_new:
+            db.session.flush()
+            yeni_idler.append(target_obj.id)
             # Alt tabloları oluştur
             for madde in ON_KONTROL_MADDELERI:
-                db.session.add(OnKontrol(basvuru_id=basvuru.id, sira=madde["sira"], madde_adi=madde["ad"]))
-            
+                db.session.add(OnKontrol(basvuru_id=target_obj.id, sira=madde["sira"], madde_adi=madde["ad"]))
             for kriter in KRITERLER:
-                db.session.add(KriterDegerlendirme(basvuru_id=basvuru.id, kriter_no=kriter["no"]))
-
+                db.session.add(KriterDegerlendirme(basvuru_id=target_obj.id, kriter_no=kriter["no"]))
             eklenen += 1
+        elif is_changed:
+            target_obj.guncelleme_tarihi = datetime.utcnow()
+            guncellenen += 1
+        else:
+            atlanan += 1
 
     db.session.commit()
-    return eklenen, atlanan, guncellenen
+    return eklenen, atlanan, guncellenen, yeni_idler
 
 
 def belge_linklerini_parse(belge_str):
@@ -326,9 +422,13 @@ def dashboard():
     """Ana sayfa: Başvuru listesi."""
     basvurular = Basvuru.query.order_by(Basvuru.olusturma_tarihi.desc()).all()
 
-    # Yeni başvuru tespiti (son 24 saat içinde eklenenler)
-    yeni_esik = datetime.utcnow() - timedelta(hours=24)
-    yeni_idler = {b.id for b in basvurular if b.olusturma_tarihi and b.olusturma_tarihi >= yeni_esik}
+    # Yeni başvuru tespiti (Session'dan gelenler)
+    # Kullanıcı isteği: Sadece son import işleminde eklenenler "Yeni" olarak işaretlensin.
+    yeni_idler_list = session.get("yeni_idler")
+    if yeni_idler_list:
+        yeni_idler = set(yeni_idler_list)
+    else:
+        yeni_idler = set()
 
     # Her değerlendiricinin iş yükünü hesapla
     is_yuku = {}
@@ -405,6 +505,7 @@ def degerlendirme(id):
         "gonullu_katilim": belge_linklerini_parse(basvuru.belge_gonullu_katilim),
         "veli_onam": belge_linklerini_parse(basvuru.belge_veli_onam),
         "olcek_izni": belge_linklerini_parse(basvuru.belge_olcek_izni),
+        "enstitu_karari": belge_linklerini_parse(basvuru.belge_enstitu_karari),
         "diger_ekler": belge_linklerini_parse(basvuru.diger_ekler),
     }
 
@@ -492,7 +593,11 @@ def mebbis_aktar():
     dosya.save(gecici_yol)
 
     try:
-        eklenen, atlanan, guncellenen = mebbis_json_yukle(gecici_yol)
+        eklenen, atlanan, guncellenen, yeni_idler = mebbis_json_yukle(gecici_yol)
+        
+        # Yeni eklenenleri session'a kaydet (Dashboard'da göstermek için)
+        session["yeni_idler"] = yeni_idler
+        
         mesajlar = []
         if eklenen > 0:
             mesajlar.append(f"{eklenen} yeni başvuru aktarıldı")

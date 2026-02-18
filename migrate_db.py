@@ -17,7 +17,19 @@ def migrate():
     
     try:
         print("Veritabanı guncelleniyor: 'diger_ekler' sutunu ekleniyor...")
-        cursor.execute("ALTER TABLE basvuru ADD COLUMN diger_ekler TEXT")
+        try:
+            cursor.execute("ALTER TABLE basvuru ADD COLUMN diger_ekler TEXT")
+            print("OK: 'diger_ekler' eklendi.")
+        except sqlite3.OperationalError:
+            print("INFO: 'diger_ekler' zaten mevcut.")
+
+        print("Veritabanı guncelleniyor: 'belge_enstitu_karari' sutunu ekleniyor...")
+        try:
+            cursor.execute("ALTER TABLE basvuru ADD COLUMN belge_enstitu_karari TEXT")
+            print("OK: 'belge_enstitu_karari' eklendi.")
+        except sqlite3.OperationalError:
+            print("INFO: 'belge_enstitu_karari' zaten mevcut.")
+
         conn.commit()
         print("OK: Guncelleme basariyla tamamlandi!")
     except sqlite3.OperationalError as e:
