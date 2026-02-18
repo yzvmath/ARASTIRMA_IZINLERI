@@ -220,7 +220,7 @@
                             <span
                                 class="badge bg-{{ b.degerlendirme_durumu|durum_renk }}-subtle text-{{ b.degerlendirme_durumu|durum_renk }}">
                                 <i class="bi {{ b.degerlendirme_durumu|durum_ikon }} me-1"></i>
-                                {{ b.degerlendirme_durumu|durum_metin }}
+                                {{ b.basvuru_durumu or b.degerlendirme_durumu|durum_metin }}
                             </span>
                         </td>
                         <td class="text-center">

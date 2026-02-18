@@ -393,12 +393,13 @@ def detay_sayfasini_oku(driver):
                 etiket = span.text.strip().replace(":", "")
                 deger = p.text.replace(span.text, "").strip()
                 
-                # Link var mı kontrol et
+                # Değeri her durumda kaydet
+                veriler[etiket] = deger
+                
+                # Link var mı kontrol et ve kaydet
                 linkler = _linkleri_oku(p, span)
                 if linkler:
                     veriler[etiket + " (Link)"] = linkler
-                else:
-                    veriler[etiket] = deger
             except:
                 continue
 
@@ -436,6 +437,38 @@ def detay_sayfasini_oku(driver):
                     if "Uygulama Bilgileri" not in veriler: veriler["Uygulama Bilgileri"] = []
                     veriler["Uygulama Bilgileri"].append([c.text.strip() for c in cols])
         except: pass
+
+        if "Telefon" not in veriler or not veriler["Telefon"]:
+             try:
+                 # Geniş arama: "Telefon" içeren her şeyi bul
+                 elements = driver.find_elements(By.XPATH, "//*[contains(text(), 'Telefon')]")
+                 for el in elements:
+                     txt = el.text.strip()
+                     if ":" in txt:
+                         val = txt.split(":", 1)[1].strip()
+                         if val and len(val) > 5:
+                             veriler["Telefon"] = val
+                             break
+                     elif el.find_elements(By.XPATH, "./following-sibling::*"):
+                         # Etiket ayrı, değer ayrı olabilir
+                         val = el.find_element(By.XPATH, "./following-sibling::*[1]").text.strip()
+                         if val and len(val) > 5:
+                             veriler["Telefon"] = val
+                             break
+             except: pass
+
+        if "Ad Soyad" not in veriler or not veriler["Ad Soyad"]:
+             try:
+                 # Geniş arama: "Ad Soyad" içeren her şeyi bul
+                 elements = driver.find_elements(By.XPATH, "//*[contains(text(), 'Ad Soyad')]")
+                 for el in elements:
+                     txt = el.text.strip()
+                     if ":" in txt:
+                         val = txt.split(":", 1)[1].strip()
+                         if val and len(val) > 2:
+                             veriler["Ad Soyad"] = val
+                             break
+             except: pass
 
     except Exception as e:
         print(f"      [!] Detay okuma hatasi: {e}")

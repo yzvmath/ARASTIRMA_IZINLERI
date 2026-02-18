@@ -53,6 +53,117 @@ def _tekil_pipe(deger):
     return "\n".join(gorulen)
 
 
+def _normalize_key(key):
+    """Büyük harf ve Türkçe karakter dönüşümü yaparak temizler."""
+    if not key:
+        return ""
+    # Basitçe \n ve boşlukları temizle, büyük harfe çevir
+    return key.replace("\n", " ").replace("İ", "I").upper().strip()
+
+
+def _get_val_robust(kayit, detay_keys, tablo_keys=None):
+    """Veriyi önce detaydan, sonra tablodan (fuzzy match) dener."""
+    detay = kayit.get("detay_verileri", {})
+    tablo = kayit.get("tablo_verileri", {})
+
+    # 1. Detay verilerinde ara
+    if isinstance(detay_keys, str):
+        detay_keys = [detay_keys]
+    
+    for dk in detay_keys:
+        val = detay.get(dk)
+        if val is None:
+            val = detay.get(dk + " (Link)")
+        
+        # Eğer veri string değilse (örn: Link listesi)
+        if isinstance(val, list) and val and isinstance(val[0], dict):
+            # Link listesinden anlamlı veri çıkarmaya çalış
+            normalized_key = _normalize_key(dk)
+            
+            # AD SOYAD Çıkarımı
+            # print(f"DEBUG: Key: {normalized_key}")
+            if "AD" in normalized_key and "SOYAD" in normalized_key:
+                print(f"DEBUG: Entering Ad Soyad block for {normalized_key}")  
+                for item in val:
+                    text = item.get("text", "")
+                    # "Ad Soyad - Belge Adı" formatını yakala
+                    if " - " in text:
+                        candidate = text.split(" - ")[0].strip()
+                        # "Safa Demir" gibi en az 2 kelime ve makul uzunlukta
+                        if " " in candidate and len(candidate) > 5 and len(candidate) < 50:
+                            return candidate
+            
+            # TELEFON Çıkarımı
+            if "TELEFON" in normalized_key:
+                # Link metinlerinde telefon ara (Nadir durum ama kontrol edelim)
+                import re
+                phone_pattern = re.compile(r'(5\d{2}\s*\d{3}\s*\d{2}\s*\d{2})')
+                for item in val:
+                    text = item.get("text", "")
+                    match = phone_pattern.search(text)
+                    if match:
+                        return match.group(0)
+
+            # E-POSTA Çıkarımı
+            if "POSTA" in normalized_key:
+                for item in val:
+                    text = item.get("text", "")
+                    if "@" in text and "." in text:
+                        return text.strip()
+
+            # Link değilse ve düz liste gelmişse (nadir)
+            continue
+            
+        # Normal string değer
+        if val and not isinstance(val, (dict, list)): 
+            return str(val).strip()
+    
+    # Kapsamlı Arama (Deep Search) - Sadece Ad Soyad için
+    # Eğer yukarıdaki standart arama sonuç vermediyse ve "AD SOYAD" arıyorsak
+    is_ad_soyad = False
+    
+    # detay_keys is ALREADY a list here due to earlier conversion
+    for k in detay_keys:
+         nk = _normalize_key(k)
+         if "AD" in nk and "SOYAD" in nk:
+             is_ad_soyad = True
+             break
+    
+    if is_ad_soyad:
+        # Detay verilerindeki TÜM Link alanlarını tara
+        for key, val in detay.items():
+            if isinstance(val, list) and val and isinstance(val[0], dict):
+                 for item in val:
+                    text = item.get("text", "")
+                    if " - " in text:
+                        candidate = text.split(" - ")[0].strip()
+                        # İsim doğrulama (en az 2 kelime, makul uzunluk, sayı içermeyen)
+                        if " " in candidate and len(candidate) > 5 and len(candidate) < 50 and not any(char.isdigit() for char in candidate):
+                            return candidate
+
+    # 2. Tablo verilerinde ara (Key normalizasyonu ile)
+    if tablo_keys:
+        if isinstance(tablo_keys, str):
+            tablo_keys = [tablo_keys]
+        
+        # Tablo anahtarlarını normalize et
+        norm_tablo = {_normalize_key(k): v for k, v in tablo.items()}
+        
+        for tk in tablo_keys:
+            norm_tk = _normalize_key(tk)
+            # Tam eşleşme ara
+            val = norm_tablo.get(norm_tk)
+            if val:
+                return str(val).strip()
+            
+            # Kısmi eşleşme ara (örn: "BAŞVURU TARİHİ" -> "BAŞVURU\nTARİHİ")
+            for nk, nv in norm_tablo.items():
+                if norm_tk in nk:
+                    return str(nv).strip()
+
+    return ""
+
+
 def mebbis_json_yukle(json_path):
     """MEBBIS'ten export edilen JSON dosyasını okuyup veritabanına aktarır."""
     with open(json_path, "r", encoding="utf-8") as f:
@@ -61,10 +172,23 @@ def mebbis_json_yukle(json_path):
     eklenen = 0
     atlanan = 0
     guncellenen = 0
+    
     for kayit in veriler:
         detay = kayit.get("detay_verileri", {})
-        basvuru_no = detay.get("Başvuru Numarası", "")
+        
+        # Başvuru Numarasını Bul (Önce detay, sonra tablo)
+        basvuru_no = _get_val_robust(kayit, "Başvuru Numarası", ["BAŞVURU NO", "BAŞVURU NUMARASI"])
+        
+        if not basvuru_no or basvuru_no == "Bilinmiyor":
+            # Tablo verilerinden "MEB" ile başlayan bir şey var mı bak
+            tablo = kayit.get("tablo_verileri", {})
+            for v in tablo.values():
+                if isinstance(v, str) and "MEB" in v and len(v) > 10:
+                    basvuru_no = v
+                    break
+        
         if not basvuru_no:
+            # print("Uyarı: Başvuru numarası bulunamadı, atlanıyor.")
             continue
 
         # Belge linklerini JSON'a çevir
@@ -73,140 +197,107 @@ def mebbis_json_yukle(json_path):
                 return json.dumps(val, ensure_ascii=False)
             return val if val else ""
 
-
-
-        # Aynı başvuru zaten varsa → değerlendirici bilgisini güncelle
+        # Mevcut kaydı kontrol et
         mevcut = Basvuru.query.filter_by(basvuru_no=basvuru_no).first()
+        
+        # Veri setini hazırla
+        yeni_veri = {
+            "basvuru_tarihi": _get_val_robust(kayit, "Başvuru Tarihi", ["BAŞVURU TARİHİ", "TARIH"]),
+            "basvuru_durumu": _get_val_robust(kayit, "Başvuru Durumu", "BAŞVURU DURUMU"),
+            "tc_kimlik": _get_val_robust(kayit, "TC Kimlik No"),
+            "ad_soyad": _get_val_robust(kayit, "Ad Soyad"),
+            "telefon": _get_val_robust(kayit, "Telefon"),
+            "eposta": _get_val_robust(kayit, "E-Posta"),
+            "adres": _get_val_robust(kayit, "Adres"),
+            "basvuru_sekli": _get_val_robust(kayit, "Başvuru Şekli"),
+            "basvuru_ulke": _get_val_robust(kayit, "Başvurunun Yapıldığı Ülke"),
+            "meslek": _get_val_robust(kayit, "Meslek"),
+            "calistigi_kurum": _get_val_robust(kayit, "Çalıştığı Kurum"),
+            "arastirma_adi": _get_val_robust(kayit, "Araştırmanın Adı", ["ARAŞTIRMANIN ADI", "PROJE ADI"]),
+            "egitim_teknoloji": _get_val_robust(kayit, "Eğitim Teknolojileri İle İlgili"),
+            "arastirma_niteligi": _get_val_robust(kayit, "Araştırmanın Niteliği", "NITELIĞI"),
+            "akademik_basari": _get_val_robust(kayit, "Akademik Başarı Ölçme"),
+            "arastirma_konusu": _get_val_robust(kayit, "Araştırmanın Konusu ve İlişkili Konular"),
+            "anahtar_kelimeler": _get_val_robust(kayit, "Anahtar Kelimeler"),
+            "yazim_dili": _get_val_robust(kayit, "Araştırmanın Yazım Dili"),
+            "il_sayisi": _get_val_robust(kayit, "Uygulama Yapılacak İl Sayısı"),
+            "calisma_grubu": _get_val_robust(kayit, "Çalışma Grubu"),
+            "teskilat_turu": _tekil_pipe(_get_val_robust(kayit, "Teşkilat Türü", "UYGULAMA YAPILACAK KURUM TÜRÜ")),
+            "meb_teskilati": _get_val_robust(kayit, "Uygulama Yapılacak MEB Teşkilatı"),
+            "okul_kurum_sayisi": _get_val_robust(kayit, "Uygulama Okul/Kurum Sayısı"),
+            "ozel_bilgiler": _get_val_robust(kayit, "Özel Bilgiler"),
+            "uygulama_suresi": _get_val_robust(kayit, "Uygulama Süresi", "SÜRE"),
+        }
+
+        # Belge linkleri (Bunlar zaten Link formatında geliyor, direkt detaydan alıyoruz)
+        belge_keys = {
+            "belge_arastirma_proje": "Araştırma Proje Bilgileri (Link)",
+            "belge_veri_toplama": "Veri Toplama Aracı (Link)",
+            "belge_taahhutname": "Taahhütname (Link)",
+            "belge_etik_kurul": "Etik Kurul Onay (Link)",
+            "belge_gonullu_katilim": "Bilgilendirme ve Gönüllü Katılım Formu (Link)",
+            "belge_veli_onam": "Veli Onam Formu (Link)",
+            "belge_olcek_izni": "Ölçek Kullanım İzni (Link)",
+            "diger_ekler": "Diğer Ekler",
+        }
+
+        if basvuru_no == "MEB.TT.2025.044260.02":
+             # Bu kaydın detay verileri boş olduğu için Ad Soyad'ı manuel set etme şansımız yok
+             # Ancak tablo verileri ile en azından kaydı oluşturabiliriz.
+             pass
+
+        # MEBBIS Durumunu İç Duruma Eşle
+        mebbis_durum = yeni_veri.get("basvuru_durumu", "").upper()
+        if "ONAY" in mebbis_durum:
+            yeni_veri["degerlendirme_durumu"] = "devam"
+        elif "TAMAM" in mebbis_durum or "SONUÇ" in mebbis_durum or "KABUL" in mebbis_durum:
+            yeni_veri["degerlendirme_durumu"] = "tamamlandi"
+        else:
+            yeni_veri["degerlendirme_durumu"] = "bekliyor"
+
         if mevcut:
-            guncellendi = False
+            is_changed = False
+            # Metin alanlarını güncelle
+            for db_field, val in yeni_veri.items():
+                old_val = getattr(mevcut, db_field, "") or ""
+                if val and val != old_val:
+                    setattr(mevcut, db_field, val)
+                    is_changed = True
             
-            # Güncellenecek standart metin alanları
-            metin_alanlari = {
-                "basvuru_durumu": "Başvuru Durumu",
-                "tc_kimlik": "TC Kimlik No",
-                "ad_soyad": "Ad Soyad",
-                "telefon": "Telefon",
-                "eposta": "E-Posta",
-                "adres": "Adres",
-                "basvuru_sekli": "Başvuru Şekli",
-                "basvuru_ulke": "Başvurunun Yapıldığı Ülke",
-                "meslek": "Meslek",
-                "calistigi_kurum": "Çalıştığı Kurum",
-                "arastirma_adi": "Araştırmanın Adı",
-                "egitim_teknoloji": "Eğitim Teknolojileri İle İlgili",
-                "arastirma_niteligi": "Araştırmanın Niteliği",
-                "akademik_basari": "Akademik Başarı Ölçme",
-                "arastirma_konusu": "Araştırmanın Konusu ve İlişkili Konular",
-                "anahtar_kelimeler": "Anahtar Kelimeler",
-                "yazim_dili": "Araştırmanın Yazım Dili",
-                "il_sayisi": "Uygulama Yapılacak İl Sayısı",
-                "calisma_grubu": "Çalışma Grubu",
-                "meb_teskilati": "Uygulama Yapılacak MEB Teşkilatı",
-                "okul_kurum_sayisi": "Uygulama Okul/Kurum Sayısı",
-                "ozel_bilgiler": "Özel Bilgiler",
-                "uygulama_suresi": "Uygulama Süresi",
-            }
-
-            for db_alan, detay_key in metin_alanlari.items():
-                yeni_val = detay.get(detay_key, "")
-                if db_alan == "teskilat_turu":
-                    yeni_val = _tekil_pipe(yeni_val)
-                
-                mevcut_val = getattr(mevcut, db_alan, "") or ""
-                if yeni_val and yeni_val != mevcut_val:
-                    setattr(mevcut, db_alan, yeni_val)
-                    guncellendi = True
-
-            # Belge linklerini güncelle
-            belge_alanlari = {
-                "belge_arastirma_proje": "Araştırma Proje Bilgileri (Link)",
-                "belge_veri_toplama": "Veri Toplama Aracı (Link)",
-                "belge_taahhutname": "Taahhütname (Link)",
-                "belge_etik_kurul": "Etik Kurul Onay (Link)",
-                "belge_gonullu_katilim": "Bilgilendirme ve Gönüllü Katılım Formu (Link)",
-                "belge_veli_onam": "Veli Onam Formu (Link)",
-                "belge_olcek_izni": "Ölçek Kullanım İzni (Link)",
-                "diger_ekler": "Diğer Ekler",
-            }
-            for db_alan, detay_key in belge_alanlari.items():
-                yeni_val_raw = detay.get(detay_key)
-                yeni_deger = belge_json(yeni_val_raw)
-                mevcut_deger = getattr(mevcut, db_alan, "") or ""
-                
-                # Eğer yeni veri gelmişse ve mevcutla aynı değilse güncelle (içerideki local_path farkları dahil)
-                if yeni_deger and yeni_deger != mevcut_deger:
-                    if "local_path" in yeni_deger:
-                        print(f"      INFO: {detay_key} için yerel yol yüklendi.")
-                    setattr(mevcut, db_alan, yeni_deger)
-                    guncellendi = True
-            if guncellendi:
+            # Belge alanlarını güncelle
+            for db_field, json_key in belge_keys.items():
+                new_val_raw = detay.get(json_key)
+                if new_val_raw:
+                    new_val_json = belge_json(new_val_raw)
+                    old_val_json = getattr(mevcut, db_field, "") or ""
+                    if new_val_json and new_val_json != old_val_json:
+                        setattr(mevcut, db_field, new_val_json)
+                        is_changed = True
+            
+            if is_changed:
                 mevcut.guncelleme_tarihi = datetime.utcnow()
                 guncellenen += 1
             else:
                 atlanan += 1
-            continue
+        else:
+            # Yeni Başvuru
+            basvuru = Basvuru(basvuru_no=basvuru_no, **yeni_veri)
+            
+            # Belgeleri ekle
+            for db_field, json_key in belge_keys.items():
+                setattr(basvuru, db_field, belge_json(detay.get(json_key)))
+            
+            db.session.add(basvuru)
+            db.session.flush()
 
-        basvuru = Basvuru(
-            basvuru_no=basvuru_no,
-            basvuru_tarihi=detay.get("Başvuru Tarihi", ""),
-            basvuru_durumu=detay.get("Başvuru Durumu", ""),
-            tc_kimlik=detay.get("TC Kimlik No", ""),
-            ad_soyad=detay.get("Ad Soyad", ""),
-            telefon=detay.get("Telefon", ""),
-            eposta=detay.get("E-Posta", ""),
-            adres=detay.get("Adres", ""),
-            basvuru_sekli=detay.get("Başvuru Şekli", ""),
-            basvuru_ulke=detay.get("Başvurunun Yapıldığı Ülke", ""),
-            meslek=detay.get("Meslek", ""),
-            calistigi_kurum=detay.get("Çalıştığı Kurum", ""),
-            arastirma_adi=detay.get("Araştırmanın Adı", ""),
-            egitim_teknoloji=detay.get("Eğitim Teknolojileri İle İlgili", ""),
-            arastirma_niteligi=detay.get("Araştırmanın Niteliği", ""),
-            akademik_basari=detay.get("Akademik Başarı Ölçme", ""),
-            arastirma_konusu=detay.get("Araştırmanın Konusu ve İlişkili Konular", ""),
-            anahtar_kelimeler=detay.get("Anahtar Kelimeler", ""),
-            yazim_dili=detay.get("Araştırmanın Yazım Dili", ""),
-            il_sayisi=detay.get("Uygulama Yapılacak İl Sayısı", ""),
-            calisma_grubu=detay.get("Çalışma Grubu", ""),
-            teskilat_turu=_tekil_pipe(detay.get("Teşkilat Türü", "")),
-            meb_teskilati=detay.get("Uygulama Yapılacak MEB Teşkilatı", ""),
-            okul_kurum_sayisi=detay.get("Uygulama Okul/Kurum Sayısı", ""),
-            ozel_bilgiler=detay.get("Özel Bilgiler", ""),
-            uygulama_suresi=detay.get("Uygulama Süresi", ""),
-            belge_arastirma_proje=belge_json(detay.get("Araştırma Proje Bilgileri (Link)")),
-            belge_veri_toplama=belge_json(detay.get("Veri Toplama Aracı (Link)")),
-            belge_taahhutname=belge_json(detay.get("Taahhütname (Link)")),
-            belge_etik_kurul=belge_json(detay.get("Etik Kurul Onay (Link)")),
-            belge_gonullu_katilim=belge_json(detay.get("Bilgilendirme ve Gönüllü Katılım Formu (Link)")),
-            belge_veli_onam=belge_json(detay.get("Veli Onam Formu (Link)")),
-            belge_olcek_izni=belge_json(detay.get("Ölçek Kullanım İzni (Link)")),
-            diger_ekler=belge_json(detay.get("Diğer Ekler")),
-        )
-        db.session.add(basvuru)
-        db.session.flush()  # ID almak için
+            # Alt tabloları oluştur
+            for madde in ON_KONTROL_MADDELERI:
+                db.session.add(OnKontrol(basvuru_id=basvuru.id, sira=madde["sira"], madde_adi=madde["ad"]))
+            
+            for kriter in KRITERLER:
+                db.session.add(KriterDegerlendirme(basvuru_id=basvuru.id, kriter_no=kriter["no"]))
 
-        # Ön kontrol maddelerini oluştur
-        for madde in ON_KONTROL_MADDELERI:
-            ok = OnKontrol(
-                basvuru_id=basvuru.id,
-                sira=madde["sira"],
-                madde_adi=madde["ad"],
-                durum="",
-                aciklama=""
-            )
-            db.session.add(ok)
-
-        # Kriterleri oluştur
-        for kriter in KRITERLER:
-            kd = KriterDegerlendirme(
-                basvuru_id=basvuru.id,
-                kriter_no=kriter["no"],
-                sonuc="",
-                aciklama=""
-            )
-            db.session.add(kd)
-
-        eklenen += 1
+            eklenen += 1
 
     db.session.commit()
     return eklenen, atlanan, guncellenen
