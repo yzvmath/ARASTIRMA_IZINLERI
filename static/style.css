@@ -18,6 +18,8 @@
     --accent-green: #16a34a;
     --accent-orange: #ea580c;
     --accent-red: #dc2626;
+    --accent-warning-readable: #9a6700;
+    /* Koyu amber/altın rengi, okunabilirlik için */
     --radius-sm: 8px;
     --radius-md: 12px;
     --radius-lg: 16px;
@@ -507,8 +509,15 @@ body {
 }
 
 @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-8px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .kriter-aciklama-row td {
@@ -671,6 +680,21 @@ body {
     border-radius: 6px;
 }
 
+/* ─── Custom Color Utilities for Readability ────────────────────────── */
+.text-warning-dark {
+    color: var(--accent-warning-readable) !important;
+}
+
+.bg-warning-dark-subtle {
+    background-color: rgba(154, 103, 0, 0.1) !important;
+    border: 1px solid rgba(154, 103, 0, 0.2) !important;
+}
+
+.badge-warning-dark {
+    background-color: rgba(154, 103, 0, 0.15) !important;
+    color: var(--accent-warning-readable) !important;
+}
+
 /* ─── Footer ──────────────────────────────────────────────────────────── */
 .footer-bar {
     background: var(--bg-card);
@@ -761,122 +785,198 @@ body {
     animation-delay: 0.3s;
 }
 
-/* ─── Print Styles ───────────────────────────────────────────────────── */
+/* ─── Print Styles - Focused Deficiency Report ───────────────────────── */
 @media print {
+    @page {
+        margin: 1.5cm;
+        size: A4;
+    }
+
     body {
         background: white !important;
         color: black !important;
-        font-size: 11pt;
+        font-size: 11pt !important;
+        padding-top: 0 !important;
     }
 
-    .navbar, .footer-bar,
-    .btn, .no-print,
-    .deg-card input[type="checkbox"],
-    #degUyari {
+    /* Hide UI non-essentials */
+    .navbar,
+    .footer-bar,
+    .btn,
+    .no-print,
+    #themeToggle,
+    .brand-icon,
+    .alert,
+    .modal,
+    .section-header button,
+    #degUyari,
+    .input-group-text,
+    .btn-icon,
+    .badge i,
+    hr,
+    .card-header .bi {
         display: none !important;
     }
 
-    .glass-card, .card {
+    /* Hide satisfied items (The Core Change) */
+    .on-kontrol-row.on-kontrol-var,
+    .on-kontrol-row.on-kontrol-na,
+    .kriter-row.kriter-uygun {
+        display: none !important;
+    }
+
+    /* Hide description rows if the parent criterion is Appropriate */
+    .kriter-aciklama-row:not(.show) {
+        display: none !important;
+    }
+
+    /* If a whole section has no deficiencies, we might still want to show it or a "No issues" message, 
+       but for now let's just show the header and the items if they exist. */
+
+    .glass-card,
+    .card {
+        background: transparent !important;
+        border: none !important;
         box-shadow: none !important;
-        border: 1px solid #ddd !important;
-        break-inside: avoid;
-        animation: none !important;
+        margin-bottom: 20pt !important;
+        padding: 0 !important;
+        overflow: visible !important;
     }
 
-    .section-header {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        color: white !important;
-    }
-
-    .section-header--blue,
-    .section-header--orange,
-    .section-header--green,
-    .section-header--purple {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
-    .kriter-uygun, .kriter-uygun-degil,
-    .on-kontrol-var, .on-kontrol-yok, .on-kontrol-na {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
-    .form-check-input {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
-    .form-check-input:checked {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
-    .radio-var:checked, .radio-uygun:checked {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
-    .radio-yok:checked, .radio-uygun-degil:checked {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
-    .kriter-no {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
-    .kriter-uygun .kriter-no,
-    .kriter-uygun-degil .kriter-no {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
-    .container {
-        max-width: 100% !important;
+    .card-body {
         padding: 0 !important;
     }
 
-    .kriter-aciklama-row {
-        display: none !important;
-    }
-
-    .kriter-aciklama-row.show {
-        display: table-row !important;
-    }
-
-    /* Özet her zaman yazdır */
-    .ozet-card {
-        break-inside: avoid;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
-    .ozet-item {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
-    /* Print header */
+    /* Report Header */
     .print-header {
         display: block !important;
         text-align: center;
-        margin-bottom: 1rem;
-        border-bottom: 2px solid #333;
-        padding-bottom: 0.5rem;
+        margin-bottom: 2rem;
+        border-bottom: 2px solid #000;
+        padding-bottom: 1rem;
     }
 
-    .print-header h3 {
+    .print-header h1 {
+        font-size: 16pt;
+        font-weight: 800;
         margin: 0;
-        font-size: 14pt;
     }
 
     .print-header p {
-        margin: 4px 0 0;
+        margin: 4px 0;
         font-size: 10pt;
-        color: #666;
+    }
+
+    /* Section Headers */
+    .section-header {
+        background: #f8f9fa !important;
+        color: black !important;
+        border-bottom: 1px solid #333 !important;
+        padding: 5pt 0 !important;
+        margin-top: 20pt !important;
+        border-radius: 0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .section-header h5 {
+        font-size: 13pt;
+        font-weight: 700;
+        margin: 0;
+        text-transform: uppercase;
+    }
+
+    /* Application Info Grid */
+    .info-item {
+        margin-bottom: 8pt;
+    }
+
+    .info-label {
+        font-size: 9pt !important;
+        color: #666 !important;
+        display: block;
+    }
+
+    .info-value {
+        font-size: 11pt !important;
+        font-weight: 700 !important;
+    }
+
+    /* Tables for Deficiencies */
+    .table {
+        width: 100% !important;
+        margin-top: 10pt !important;
+    }
+
+    .table th,
+    .table td {
+        border-bottom: 1px solid #eee !important;
+        padding: 8pt 0 !important;
+        text-align: left !important;
+    }
+
+    .table thead {
+        display: none !important;
+        /* Hide headers since we are listing deficiencies */
+    }
+
+    /* Status Indicators in Print */
+    .on-kontrol-row.on-kontrol-yok td:first-child::before {
+        content: "[EKSİK] ";
+        font-weight: 800;
+        color: #d63384;
+    }
+
+    .kriter-row.kriter-uygun-degil td.kriter-metin::before {
+        content: "[UYGUN DEĞİL] ";
+        font-weight: 800;
+        color: #d63384;
+    }
+
+    /* Hide the radio columns in print, just show the text and descriptions */
+    #onKontrolTablosu td:nth-child(2),
+    #onKontrolTablosu td:nth-child(3),
+    #onKontrolTablosu td:nth-child(4),
+    #kriterTablosu td:nth-child(3),
+    #kriterTablosu td:nth-child(4) {
+        display: none !important;
+    }
+
+    /* Show explanation text clearly */
+    .kriter-aciklama-row td {
+        padding-left: 20pt !important;
+        border-bottom: 1px solid #eee !important;
+    }
+
+    textarea,
+    input[type="text"] {
+        border: none !important;
+        background: transparent !important;
+        font-style: italic;
+        padding: 0 !important;
+        height: auto !important;
+        min-height: 0 !important;
+    }
+
+    /* Signatures */
+    .print-footer {
+        display: flex !important;
+        justify-content: space-around;
+        margin-top: 4rem;
+        page-break-inside: avoid;
+    }
+
+    .sig-box {
+        width: 40%;
+        text-align: center;
+        border-top: 1px solid #000;
+        padding-top: 10pt;
+    }
+
+    /* Page Breaks */
+    .card,
+    .section-header {
+        page-break-inside: avoid;
     }
 }
 

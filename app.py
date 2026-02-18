@@ -249,17 +249,15 @@ def mebbis_json_yukle(json_path):
                         for item in v:
                             if isinstance(item, dict) and "url" in item and "text" in item:
                                 url = item["url"].strip()
-                                text = item["text"].strip()
-                                
-                                # Text temizliği
-                                clean_text = text
+                                _text = item["text"].strip()
                                 # Hem kısa (-) hem uzun (–) tireyi handle et
                                 separator = None
-                                if " - " in text: separator = " - "
-                                elif " – " in text: separator = " – "
+                                if " - " in _text: separator = " - "
+                                elif " – " in _text: separator = " – "
                                 
+                                clean_text = _text # Initialize with original text
                                 if separator:
-                                    parts = text.split(separator, 1)
+                                    parts = _text.split(separator, 1)
                                     if len(parts) > 1:
                                         clean_text = parts[1].strip()
                                 
@@ -419,52 +417,97 @@ def belge_linklerini_parse(belge_str):
 
 @app.route("/")
 def dashboard():
-    """Ana sayfa: Başvuru listesi."""
+    """Ana sayfa: Sadece bekleyen/devam eden başvuru listesi."""
+    # 4-LÜ PANEL İSTATİSTİKLERİ (Kullanıcı Talebi)
+    # 1. Aktif Başvuru: Onay veya Red almamış her şey
+    aktif_basvurular = Basvuru.query.filter(~Basvuru.basvuru_durumu.in_(["onaylandi", "reddedildi", "ONAYLANDI", "REDDEDİLDİ"])).all()
+    
+    total_active = len(aktif_basvurular)
+    
+    # 2. Ön Değerlendirmedekiler: Aktif + (Ön Kontrol bitmemiş VEYA değerlendirici yok)
+    prelim_list = []
+    # 3. Onay Bekleyenler: Aktif + (Ön Kontrol bitmiş VE en az 1 değerlendirici var)
+    pending_list = []
+    
+    for b in aktif_basvurular:
+        if b.degerlendirme_durumu != "tamamlandi" or not b.degerlendiriciler:
+            prelim_list.append(b)
+        else:
+            pending_list.append(b)
+            
+    prelim_count = len(prelim_list)
+    pending_count = len(pending_list)
+    
+    # 4. Tamamlananlar: Onaylanmış veya Reddedilmiş
+    completed_count = Basvuru.query.filter(Basvuru.basvuru_durumu.in_(["onaylandi", "reddedildi", "ONAYLANDI", "REDDEDİLDİ"])).count()
+    
+    stats = {
+        "active": total_active,
+        "prelim": prelim_count,
+        "pending": pending_count,
+        "completed": completed_count
+    }
+    
+    # Dashboard içeriği (Listelenenler)
     basvurular = Basvuru.query.order_by(Basvuru.olusturma_tarihi.desc()).all()
-
-    # Yeni başvuru tespiti (Session'dan gelenler)
-    # Kullanıcı isteği: Sadece son import işleminde eklenenler "Yeni" olarak işaretlensin.
+    
     yeni_idler_list = session.get("yeni_idler")
     if yeni_idler_list:
         yeni_idler = set(yeni_idler_list)
     else:
         yeni_idler = set()
 
-    # Her değerlendiricinin iş yükünü hesapla
-    is_yuku = {}
-    for d in DEGERLENDIRICILER:
-        is_yuku[d] = BasvuruDegerlendirici.query.filter_by(degerlendirici_adi=d).count()
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
 
     # Değerlendirici paneli verileri
     deg_panel = []
+    is_yuku = {}  # Frontend'e giden iş yükü özeti (Sadece aktifler)
+
     for d in DEGERLENDIRICILER:
         atamalar = BasvuruDegerlendirici.query.filter_by(degerlendirici_adi=d).all()
         gorevler = []
-        toplam = len(atamalar)
         bekliyor = devam = tamamlandi = 0
+        son_30_gun = 0
+        
         for atama in atamalar:
             b = Basvuru.query.get(atama.basvuru_id)
-            if b:
-                durum = b.degerlendirme_durumu or "bekliyor"
-                if durum == "bekliyor":
-                    bekliyor += 1
-                elif durum == "devam":
-                    devam += 1
-                elif durum == "tamamlandi":
-                    tamamlandi += 1
-                gorevler.append({
-                    "id": b.id,
-                    "basvuru_no": b.basvuru_no,
-                    "ad_soyad": b.ad_soyad,
-                    "durum": durum,
-                })
+            if not b:
+                continue
+            
+            durum = b.degerlendirme_durumu or "bekliyor"
+            
+            # Son 30 günde tamamlananlar (onay veya red)
+            if durum in ["onaylandi", "reddedildi"]:
+                if b.guncelleme_tarihi and b.guncelleme_tarihi >= thirty_days_ago:
+                    son_30_gun += 1
+                continue # Tamamlananları AKTİF iş yükünden çıkar
+            
+            # Aktif görevler (bekliyor, devam, tamamlandi)
+            if durum == "bekliyor":
+                bekliyor += 1
+            elif durum == "devam":
+                devam += 1
+            elif durum == "tamamlandi":
+                tamamlandi += 1
+            
+            gorevler.append({
+                "id": b.id,
+                "basvuru_no": b.basvuru_no,
+                "ad_soyad": b.ad_soyad,
+                "durum": durum,
+            })
+            
+        aktif_toplam = len(gorevler)
+        is_yuku[d] = aktif_toplam
+
         deg_panel.append({
             "ad": d,
-            "toplam": toplam,
+            "toplam": aktif_toplam,
             "bekliyor": bekliyor,
             "devam": devam,
             "tamamlandi": tamamlandi,
             "gorevler": gorevler,
+            "son_30_gun": son_30_gun
         })
 
     return render_template(
@@ -474,6 +517,20 @@ def dashboard():
         degerlendiriciler=DEGERLENDIRICILER,
         yeni_idler=yeni_idler,
         deg_panel=deg_panel,
+        stats=stats
+    )
+
+
+@app.route("/tamamlananlar")
+def tamamlanan_basvurular():
+    """Tamamlanan İşlemler sayfası: Onaylanmış veya Reddedilmiş başvurular."""
+    basvurular = Basvuru.query.filter(
+        Basvuru.degerlendirme_durumu.in_(["onaylandi", "reddedildi"])
+    ).order_by(Basvuru.guncelleme_tarihi.desc()).all()
+
+    return render_template(
+        "tamamlananlar.html",
+        basvurular=basvurular
     )
 
 
@@ -570,10 +627,65 @@ def degerlendirme_kaydet(id):
         basvuru.degerlendirme_durumu = "devam"
 
     basvuru.guncelleme_tarihi = datetime.utcnow()
-    db.session.commit()
+    
+    # Buton aksiyonuna göre son durumu belirle
+    action = request.form.get("action")
+    if action == "onayla":
+        basvuru.degerlendirme_durumu = "onaylandi"
+        db.session.commit()
+        flash(f"Başvuru ({basvuru.basvuru_no}) ONAYLANDI ve Tamamlanan İşlemler'e taşındı.", "success")
+        return redirect(url_for("dashboard"))
+    elif action == "reddet":
+        basvuru.degerlendirme_durumu = "reddedildi"
+        db.session.commit()
+        flash(f"Başvuru ({basvuru.basvuru_no}) REDDEDİLDİ ve Tamamlanan İşlemler'e taşındı.", "danger")
+        return redirect(url_for("dashboard"))
+    else:
+        # Standart Kaydet
+        db.session.commit()
+        flash("Değerlendirme başarıyla kaydedildi!", "success")
+        return redirect(url_for("degerlendirme", id=id))
 
-    flash("Değerlendirme başarıyla kaydedildi!", "success")
-    return redirect(url_for("degerlendirme", id=id))
+
+@app.route("/basvuru/<int:id>/on-kontrol-kaydet", methods=["POST"])
+def on_kontrol_kaydet(id):
+    """Sadece ön kontrol maddelerini kaydeder ve durumu günceller."""
+    basvuru = Basvuru.query.get_or_404(id)
+    
+    # Formdan gelen ön kontrolleri kaydet
+    for madde in ON_KONTROL_MADDELERI:
+        sira = madde["sira"]
+        ok = OnKontrol.query.filter_by(basvuru_id=id, sira=sira).first()
+        if not ok:
+            ok = OnKontrol(basvuru_id=id, sira=sira, madde_adi=madde["ad"])
+            db.session.add(ok)
+            
+        ok.durum = request.form.get(f"on_kontrol_durum_{sira}", "")
+        ok.aciklama = request.form.get(f"on_kontrol_aciklama_{sira}", "")
+
+    # Kaç madde değerlendirilmiş say
+    degerlendirilen_sayisi = 0
+    for madde in ON_KONTROL_MADDELERI:
+        durum = request.form.get(f"on_kontrol_durum_{madde['sira']}")
+        if durum in ["VAR", "YOK", "N/A"]:
+            degerlendirilen_sayisi += 1
+            
+    # Durumu güncelle
+    if degerlendirilen_sayisi == 0:
+        basvuru.basvuru_durumu = "Bekliyor" # Veya mevcut durum kalsın
+    elif degerlendirilen_sayisi < len(ON_KONTROL_MADDELERI):
+        basvuru.basvuru_durumu = "Ön Değerlendirme Devam Ediyor"
+    else:
+        basvuru.basvuru_durumu = "Ön Değerlendirme Tamamlandı"
+
+    basvuru.guncelleme_tarihi = datetime.utcnow()
+    db.session.commit()
+    
+    return jsonify({
+        "status": "success", 
+        "message": "Ön kontroller kaydedildi.",
+        "new_status": basvuru.basvuru_durumu
+    })
 
 
 @app.route("/mebbis-aktar", methods=["POST"])
@@ -693,6 +805,9 @@ def durum_renk_filter(durum):
         "bekliyor": "warning",
         "devam": "info",
         "tamamlandi": "success",
+        "on_degerlendirme": "primary",
+        "onaylandi": "success",
+        "reddedildi": "danger"
     }
     return renk_map.get(durum, "secondary")
 
@@ -702,7 +817,9 @@ def durum_ikon_filter(durum):
     ikon_map = {
         "bekliyor": "bi-hourglass-split",
         "devam": "bi-pencil-square",
-        "tamamlandi": "bi-check-circle-fill",
+        "tamamlandi": "bi-check-circle",
+        "onaylandi": "bi-check-circle-fill",
+        "reddedildi": "bi-x-circle-fill",
     }
     return ikon_map.get(durum, "bi-question-circle")
 
@@ -712,7 +829,9 @@ def durum_metin_filter(durum):
     metin_map = {
         "bekliyor": "Bekliyor",
         "devam": "Devam Ediyor",
-        "tamamlandi": "Tamamlandı",
+        "tamamlandi": "Ön Değerlendirme Tamamlandı", # Bu iç durum için metni güncelleyelim
+        "onaylandi": "ONAYLANDI",
+        "reddedildi": "REDDEDİLDİ",
     }
     return metin_map.get(durum, "Bilinmiyor")
 

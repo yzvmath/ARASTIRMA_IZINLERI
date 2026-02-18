@@ -42,20 +42,19 @@
                 <i class="bi bi-folder2-open"></i>
             </div>
             <div>
-                <div class="stat-value">{{ basvurular|length }}</div>
-                <div class="stat-label">Toplam Başvuru</div>
+                <div class="stat-value">{{ stats.active }}</div>
+                <div class="stat-label">Aktif Başvuru</div>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="stat-card">
-            <div class="stat-icon bg-warning-subtle text-warning">
+            <div class="stat-icon bg-warning-dark-subtle text-warning-dark">
                 <i class="bi bi-hourglass-split"></i>
             </div>
             <div>
-                <div class="stat-value">{{ basvurular|selectattr('degerlendirme_durumu', 'equalto',
-                    'bekliyor')|list|length }}</div>
-                <div class="stat-label">Bekliyor</div>
+                <div class="stat-value text-warning-dark">{{ stats.prelim }}</div>
+                <div class="stat-label">Ön Değerlendirmedekiler</div>
             </div>
         </div>
     </div>
@@ -65,9 +64,8 @@
                 <i class="bi bi-pencil-square"></i>
             </div>
             <div>
-                <div class="stat-value">{{ basvurular|selectattr('degerlendirme_durumu', 'equalto', 'devam')|list|length
-                    }}</div>
-                <div class="stat-label">Devam Ediyor</div>
+                <div class="stat-value">{{ stats.pending }}</div>
+                <div class="stat-label">Onay Bekleyenler</div>
             </div>
         </div>
     </div>
@@ -77,9 +75,8 @@
                 <i class="bi bi-check-circle-fill"></i>
             </div>
             <div>
-                <div class="stat-value">{{ basvurular|selectattr('degerlendirme_durumu', 'equalto',
-                    'tamamlandi')|list|length }}</div>
-                <div class="stat-label">Tamamlandı</div>
+                <div class="stat-value">{{ stats.completed }}</div>
+                <div class="stat-label">Tamamlananlar</div>
             </div>
         </div>
     </div>
@@ -101,7 +98,13 @@
                         <i class="bi bi-person-circle deg-panel-avatar"></i>
                         <div>
                             <div class="deg-panel-name">{{ dp.ad }}</div>
-                            <div class="deg-panel-total">{{ dp.toplam }} görev</div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="deg-panel-total">{{ dp.toplam }} aktif</span>
+                                <span class="badge bg-secondary-subtle text-secondary small"
+                                    title="Son 30 günde sonuçlandırılan (Onay/Red)">
+                                    <i class="bi bi-calendar-check me-1"></i>30 Gün: {{ dp.son_30_gun }}
+                                </span>
+                            </div>
                         </div>
                     </div>
 
@@ -123,7 +126,8 @@
                             <span class="text-success"><i class="bi bi-check-circle-fill"></i> {{ dp.tamamlandi
                                 }}</span>
                             <span class="text-info"><i class="bi bi-pencil-square"></i> {{ dp.devam }}</span>
-                            <span class="text-warning"><i class="bi bi-hourglass-split"></i> {{ dp.bekliyor }}</span>
+                            <span class="text-warning-dark"><i class="bi bi-hourglass-split"></i> {{ dp.bekliyor
+                                }}</span>
                         </div>
                     </div>
 
@@ -133,10 +137,10 @@
                         <a href="{{ url_for('degerlendirme', id=g.id) }}" class="deg-gorev-item"
                             title="{{ g.ad_soyad or '-' }}">
                             <span
-                                class="deg-gorev-dot bg-{{ 'success' if g.durum == 'tamamlandi' else 'info' if g.durum == 'devam' else 'warning' }}"></span>
+                                class="deg-gorev-dot bg-{{ 'success' if g.durum == 'tamamlandi' else 'info' if g.durum == 'devam' else 'warning-dark' }}"></span>
                             <span class="deg-gorev-text">{{ g.basvuru_no }}</span>
                             <span
-                                class="badge bg-{{ 'success' if g.durum == 'tamamlandi' else 'info' if g.durum == 'devam' else 'warning' }}-subtle text-{{ 'success' if g.durum == 'tamamlandi' else 'info' if g.durum == 'devam' else 'warning' }} deg-gorev-badge">
+                                class="badge bg-{{ 'success' if g.durum == 'tamamlandi' else 'info' if g.durum == 'devam' else 'warning-dark' }}-subtle text-{{ 'success' if g.durum == 'tamamlandi' else 'info' if g.durum == 'devam' else 'warning-dark' }} deg-gorev-badge">
                                 {{ g.durum|durum_metin }}
                             </span>
                         </a>
@@ -175,7 +179,6 @@
                         <th>Başvuru No</th>
                         <th>Tarih</th>
                         <th>Araştırmacı</th>
-                        <th>Telefon</th>
                         <th>Araştırma Adı</th>
                         <th class="text-center" style="width: 100px;">Nitelik</th>
                         <th style="width: 150px;">Değerlendiriciler</th>
@@ -195,7 +198,6 @@
                         </td>
                         <td>{{ b.basvuru_tarihi or '-' }}</td>
                         <td>{{ b.ad_soyad or '-' }}</td>
-                        <td><small>{{ b.telefon or '-' }}</small></td>
                         <td class="text-wrap research-title-cell" style="max-width: 400px;"
                             title="{{ b.arastirma_adi }}">
                             {{ b.arastirma_adi or '-' }}
@@ -217,8 +219,10 @@
                             </div>
                         </td>
                         <td>
-                            <span
-                                class="badge bg-{{ b.degerlendirme_durumu|durum_renk }}-subtle text-{{ b.degerlendirme_durumu|durum_renk }}">
+                            {% set is_on_tamam = (b.basvuru_durumu == 'Ön Değerlendirme Tamamlandı') %}
+                            {% set status_class = 'primary' if is_on_tamam else b.degerlendirme_durumu|durum_renk %}
+                            <span class="badge bg-{{ status_class }}-subtle text-{{ status_class }} text-wrap shadow-sm"
+                                style="width: 110px; line-height: 1.3; font-size: 0.75rem;">
                                 <i class="bi {{ b.degerlendirme_durumu|durum_ikon }} me-1"></i>
                                 {{ b.basvuru_durumu or b.degerlendirme_durumu|durum_metin }}
                             </span>
