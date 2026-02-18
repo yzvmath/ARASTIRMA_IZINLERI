@@ -630,18 +630,59 @@ def basvuru_sil(id):
 
 @app.route("/belge-goster/<path:filename>")
 def serve_doc(filename):
-    """Belgeleri tarayıcıda açılacak (inline) şekilde sunar."""
-    # Eğer filename başında 'static/belgeler/' varsa temizle
+    """Yerel belgeleri inline olarak sunar."""
+    # Başlık parametresini al (indirilecek olursa kullanılacak isim)
+    display_name = request.args.get("title", "belge")
+    # Dosya sistemindeki ismi temizle
     clean_filename = filename.replace("static/belgeler/", "").replace("static\\belgeler\\", "")
-    
-    # Dosya yolunu oluştur
     directory = os.path.join(BASE_DIR, "static", "belgeler")
+    full_path = os.path.join(directory, clean_filename)
+
+    if not os.path.exists(full_path):
+        return f"Dosya bulunamadı: {clean_filename}", 404
+
+    from flask import make_response
+    with open(full_path, 'rb') as f:
+        content = f.read()
+
+    response = make_response(content)
+    response.headers["Content-Type"] = "application/pdf"
+    # UTF-8 karakter desteği için filename* kullanımı
+    from urllib.parse import quote
+    safe_name = quote(display_name)
+    response.headers["Content-Disposition"] = f"inline; filename=\"{safe_name}.pdf\"; filename*=UTF-8''{safe_name}.pdf"
+    # Frame kısıtlamalarını kaldır
+    response.headers.pop("X-Frame-Options", None)
+    return response
+
+
+@app.route("/proxy-belge")
+def proxy_belge():
+    """Dış MEBBİS belgelerini inline olarak sunar."""
+    url = request.args.get("url")
+    display_name = request.args.get("title", "belge")
     
-    return send_from_directory(
-        directory,
-        clean_filename,
-        as_attachment=False
-    )
+    if not url:
+        return "URL eksik", 400
+    if "meb.gov.tr" not in url:
+        return "Geçersiz kaynak", 403
+
+    try:
+        import requests
+        from flask import make_response
+        r = requests.get(url, timeout=15)
+        
+        response = make_response(r.content)
+        response.headers["Content-Type"] = "application/pdf"
+        
+        from urllib.parse import quote
+        safe_name = quote(display_name)
+        response.headers["Content-Disposition"] = f"inline; filename=\"{safe_name}.pdf\"; filename*=UTF-8''{safe_name}.pdf"
+        # X-Frame-Options KESİNLİKLE kaldırılmalı yoksa iframe açılmaz
+        response.headers.pop("X-Frame-Options", None)
+        return response
+    except Exception as e:
+        return f"Hata: {str(e)}", 500
 
 
 # ─── TEMPLATE FİLTRELERİ ─────────────────────────────────────────────────────

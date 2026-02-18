@@ -133,8 +133,11 @@
                                 {% for link in linkler %}
                                 <div class="mb-1 d-flex align-items-center">
                                     <i class="bi bi-file-earmark-arrow-down text-muted small me-1"></i>
-                                    {% set final_url = link.url if (link.url.startswith('http') or not link.local_path)
-                                    else ("/belge-goster/" + link.local_path) %}
+                                    {% set doc_title = basvuru.ad_soyad + " - " + baslik + " - " + (link.clean_text if
+                                    link.clean_text else link.text) %}
+                                    {% set final_url = url_for('proxy_belge', url=link.url, title=doc_title) if
+                                    (link.url.startswith('http') or not link.local_path)
+                                    else url_for('serve_doc', filename=link.local_path, title=doc_title) %}
                                     <button type="button"
                                         class="btn btn-link p-0 text-start text-decoration-none text-truncate flex-grow-1"
                                         style="font-size: 0.8rem; max-width: 100%;"
