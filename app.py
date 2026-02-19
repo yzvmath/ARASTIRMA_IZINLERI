@@ -9,7 +9,7 @@ import os
 from datetime import datetime, timedelta
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, session
-from models import db, Basvuru, OnKontrol, KriterDegerlendirme, BasvuruDegerlendirici, ON_KONTROL_MADDELERI, KRITERLER
+from models import db, Basvuru, OnKontrol, KriterDegerlendirme, BasvuruDegerlendirici, Degerlendirici, ON_KONTROL_MADDELERI, KRITERLER
 
 # ─── Uygulama Ayarları ───────────────────────────────────────────────────────
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -22,17 +22,22 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db.init_app(app)
 
-with app.app_context():
-    db.create_all()
-
-
-# ─── DEĞERLENDİRİCİ LİSTESİ ─────────────────────────────────────────────────
-DEGERLENDIRICILER = [
+# Statik liste artık DB'ye senkronize ediliyor. 
+# Bu liste sadece ilk kurulumda veriyi doldurmak için kullanılır.
+_STATIC_DEGERLENDIRICILER = [
     "FATİH DEVECİ",
     "MUHAMMET BAHADIR ŞAHİN",
     "ÇİĞDEM HODUL",
     "SEMA AKBAŞ",
 ]
+
+with app.app_context():
+    db.create_all()
+    # Mevcut değerlendiricileri DB'ye aktar (eğer yoksa)
+    if Degerlendirici.query.count() == 0:
+        for ad in _STATIC_DEGERLENDIRICILER:
+            db.session.add(Degerlendirici(ad_soyad=ad, aktif=True))
+        db.session.commit()
 
 
 # ─── YARDIMCI FONKSİYONLAR ───────────────────────────────────────────────────
@@ -201,8 +206,11 @@ def mebbis_json_yukle(json_path):
                 return json.dumps(val, ensure_ascii=False)
             return val if val else ""
 
-        # Mevcut kaydı kontrol et
+        # Mevcut kaydı kontrol et (GÜVENLİK: Mevcut başvuruları atla, üzerine yazma)
         mevcut = Basvuru.query.filter_by(basvuru_no=basvuru_no).first()
+        if mevcut:
+            atlanan += 1
+            continue
         
         # Veri setini hazırla
         yeni_veri = {
@@ -352,12 +360,16 @@ def mebbis_json_yukle(json_path):
         
         # MEBBIS Durumunu İç Duruma Eşle
         mebbis_durum = yeni_veri.get("basvuru_durumu", "").upper()
-        if "ONAY" in mebbis_durum:
+        if "TAMAMLANDI" in mebbis_durum or "TAMAMLAND" in mebbis_durum:
+             yeni_veri["degerlendirme_durumu"] = "tamamlandi"
+        elif "ONAY" in mebbis_durum:
             yeni_veri["degerlendirme_durumu"] = "devam"
         elif "TAMAM" in mebbis_durum or "SONUÇ" in mebbis_durum or "KABUL" in mebbis_durum:
             yeni_veri["degerlendirme_durumu"] = "tamamlandi"
         else:
-            yeni_veri["degerlendirme_durumu"] = "bekliyor"
+            # Only reset to 'bekliyor' if it's currently in a pre-check state
+            # This prevents overwriting advanced states if MEBBIS status is ambiguous
+             yeni_veri["degerlendirme_durumu"] = "bekliyor"
 
         for db_field, val in yeni_veri.items():
             old_val = getattr(target_obj, db_field, "") or ""
@@ -412,58 +424,20 @@ def belge_linklerini_parse(belge_str):
         return [{"text": "Belge", "url": belge_str}]
     return []
 
+# ─── YARDIMCI GÖREV FONKSİYONLARI ──────────────────────────────────────────────
 
-# ─── ROTALAR ─────────────────────────────────────────────────────────────────
-
-@app.route("/")
-def dashboard():
-    """Ana sayfa: Sadece bekleyen/devam eden başvuru listesi."""
-    # 4-LÜ PANEL İSTATİSTİKLERİ (Kullanıcı Talebi)
-    # 1. Aktif Başvuru: Onay veya Red almamış her şey
-    aktif_basvurular = Basvuru.query.filter(~Basvuru.basvuru_durumu.in_(["onaylandi", "reddedildi", "ONAYLANDI", "REDDEDİLDİ"])).all()
-    
-    total_active = len(aktif_basvurular)
-    
-    # 2. Ön Değerlendirmedekiler: Aktif + (Ön Kontrol bitmemiş VEYA değerlendirici yok)
-    prelim_list = []
-    # 3. Onay Bekleyenler: Aktif + (Ön Kontrol bitmiş VE en az 1 değerlendirici var)
-    pending_list = []
-    
-    for b in aktif_basvurular:
-        if b.degerlendirme_durumu != "tamamlandi" or not b.degerlendiriciler:
-            prelim_list.append(b)
-        else:
-            pending_list.append(b)
-            
-    prelim_count = len(prelim_list)
-    pending_count = len(pending_list)
-    
-    # 4. Tamamlananlar: Onaylanmış veya Reddedilmiş
-    completed_count = Basvuru.query.filter(Basvuru.basvuru_durumu.in_(["onaylandi", "reddedildi", "ONAYLANDI", "REDDEDİLDİ"])).count()
-    
-    stats = {
-        "active": total_active,
-        "prelim": prelim_count,
-        "pending": pending_count,
-        "completed": completed_count
-    }
-    
-    # Dashboard içeriği (Listelenenler)
-    basvurular = Basvuru.query.order_by(Basvuru.olusturma_tarihi.desc()).all()
-    
-    yeni_idler_list = session.get("yeni_idler")
-    if yeni_idler_list:
-        yeni_idler = set(yeni_idler_list)
-    else:
-        yeni_idler = set()
-
+def _get_degerlendirici_stats():
+    """Tüm aktif değerlendiriciler için aktif ve son 30 gün istatistiklerini hesaplar."""
     thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-
-    # Değerlendirici paneli verileri
     deg_panel = []
-    is_yuku = {}  # Frontend'e giden iş yükü özeti (Sadece aktifler)
+    is_yuku = {}  # { "AD": {"aktif": X, "son_30_gun": Y, "bekliyor": Z...} }
 
-    for d in DEGERLENDIRICILER:
+    # Sadece AKTİF değerlendiricileri baz al veya hepsini (Yönetim sayfası için HEPSİ gerekebilir)
+    # Burada iş yükü panelleri için aktifleri alalım.
+    degerlendiriciler_db = Degerlendirici.query.all()
+
+    for d_obj in degerlendiriciler_db:
+        d = d_obj.ad_soyad
         atamalar = BasvuruDegerlendirici.query.filter_by(degerlendirici_adi=d).all()
         gorevler = []
         bekliyor = devam = tamamlandi = 0
@@ -480,9 +454,9 @@ def dashboard():
             if durum in ["onaylandi", "reddedildi"]:
                 if b.guncelleme_tarihi and b.guncelleme_tarihi >= thirty_days_ago:
                     son_30_gun += 1
-                continue # Tamamlananları AKTİF iş yükünden çıkar
+                continue 
             
-            # Aktif görevler (bekliyor, devam, tamamlandi)
+            # Aktif görevler
             if durum == "bekliyor":
                 bekliyor += 1
             elif durum == "devam":
@@ -495,26 +469,82 @@ def dashboard():
                 "basvuru_no": b.basvuru_no,
                 "ad_soyad": b.ad_soyad,
                 "durum": durum,
+                "obj": b,
             })
             
         aktif_toplam = len(gorevler)
-        is_yuku[d] = aktif_toplam
-
-        deg_panel.append({
+        stats = {
             "ad": d,
+            "ad_soyad_obj": d_obj,
             "toplam": aktif_toplam,
             "bekliyor": bekliyor,
             "devam": devam,
             "tamamlandi": tamamlandi,
             "gorevler": gorevler,
-            "son_30_gun": son_30_gun
-        })
+            "son_30_gun": son_30_gun,
+            "aktif": d_obj.aktif
+        }
+        deg_panel.append(stats)
+        is_yuku[d] = stats
+
+    return deg_panel, is_yuku
+
+
+# ─── ROTALAR ─────────────────────────────────────────────────────────────────
+
+@app.route("/")
+def dashboard():
+    """Ana sayfa: Sadece bekleyen/devam eden başvuru listesi."""
+    # 4-LÜ PANEL İSTATİSTİKLERİ (Kullanıcı Talebi)
+    # 1. Aktif Başvuru: Onaylanmış veya Reddedilmiş OLMAYAN HER ŞEY
+    aktif_basvurular = Basvuru.query.filter(~Basvuru.degerlendirme_durumu.in_(["onaylandi", "reddedildi"])).all()
+    total_active = len(aktif_basvurular)
+    
+    # 2. Ön Değerlendirmedekiler & 3. Onay Bekleyenler
+    prelim_count = 0
+    pending_count = 0
+    
+    for b in aktif_basvurular:
+        durum = b.degerlendirme_durumu
+        # Ön Değerlendirmedekiler: bekliyor, devam VEYA (tamamlandi ama değerlendirici atanmamış)
+        if durum in ['bekliyor', 'devam'] or (durum == 'tamamlandi' and not b.degerlendiriciler):
+            prelim_count += 1
+        # Onay Bekleyenler: (tamamlandi + değerlendirici var) VEYA yonetici_onayinda VEYA okul_secimi
+        else:
+            pending_count += 1
+            
+    # 4. Tamamlananlar: Onaylanmış veya Reddedilmiş
+    completed_count = Basvuru.query.filter(Basvuru.degerlendirme_durumu.in_(["onaylandi", "reddedildi"])).count()
+    
+    stats = {
+        "active": total_active,
+        "prelim": prelim_count,
+        "pending": pending_count,
+        "completed": completed_count
+    }
+    
+    # Dashboard içeriği (Listelenenler)
+    # Dashboard içeriği (Listelenenler) - Sadece aktif olanları göster (Tamamlananlar hariç)
+    basvurular = Basvuru.query.filter(
+        ~Basvuru.degerlendirme_durumu.in_(["onaylandi", "reddedildi", "ONAYLANDI", "REDDEDİLDİ"])
+    ).order_by(Basvuru.olusturma_tarihi.desc()).all()
+    
+    yeni_idler_list = session.get("yeni_idler")
+    if yeni_idler_list:
+        yeni_idler = set(yeni_idler_list)
+    else:
+        yeni_idler = set()
+
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30) # Filtre için lazım olabilir
+
+    # Değerlendirici paneli verileri (Helper kullanılarak)
+    deg_panel, is_yuku = _get_degerlendirici_stats()
 
     return render_template(
         "dashboard.html",
         basvurular=basvurular,
         is_yuku=is_yuku,
-        degerlendiriciler=DEGERLENDIRICILER,
+        degerlendiriciler=[d['ad'] for d in deg_panel if d.get('aktif')],
         yeni_idler=yeni_idler,
         deg_panel=deg_panel,
         stats=stats
@@ -569,10 +599,11 @@ def degerlendirme(id):
     # Atanmış değerlendiriciler
     atanmis = [bd.degerlendirici_adi for bd in basvuru.degerlendiriciler]
 
-    # Her değerlendiricinin iş yükünü hesapla
-    is_yuku = {}
-    for d in DEGERLENDIRICILER:
-        is_yuku[d] = BasvuruDegerlendirici.query.filter_by(degerlendirici_adi=d).count()
+    # Her değerlendiricinin iş yükünü detaylı hesapla
+    _, is_yuku = _get_degerlendirici_stats()
+
+    # Sadece AKTİF değerlendiricileri seçim listesine gönder
+    degerlendiriciler_list = [d.ad_soyad for d in Degerlendirici.query.filter_by(aktif=True).all()]
 
     return render_template(
         "degerlendirme.html",
@@ -580,7 +611,7 @@ def degerlendirme(id):
         on_kontroller=on_kontroller,
         kriterler=kriterler,
         belgeler=belgeler,
-        degerlendiriciler=DEGERLENDIRICILER,
+        degerlendiriciler=degerlendiriciler_list,
         on_kontrol_maddeleri=ON_KONTROL_MADDELERI,
         atanmis_degerlendiriciler=atanmis,
         is_yuku=is_yuku,
@@ -631,9 +662,9 @@ def degerlendirme_kaydet(id):
     # Buton aksiyonuna göre son durumu belirle
     action = request.form.get("action")
     if action == "onayla":
-        basvuru.degerlendirme_durumu = "onaylandi"
+        basvuru.degerlendirme_durumu = "yonetici_onayinda"
         db.session.commit()
-        flash(f"Başvuru ({basvuru.basvuru_no}) ONAYLANDI ve Tamamlanan İşlemler'e taşındı.", "success")
+        flash(f"Başvuru ({basvuru.basvuru_no}) yönetici onayına gönderildi.", "success")
         return redirect(url_for("dashboard"))
     elif action == "reddet":
         basvuru.degerlendirme_durumu = "reddedildi"
@@ -645,6 +676,48 @@ def degerlendirme_kaydet(id):
         db.session.commit()
         flash("Değerlendirme başarıyla kaydedildi!", "success")
         return redirect(url_for("degerlendirme", id=id))
+
+
+@app.route("/basvuru/<int:id>/yonetici-karar", methods=["POST"])
+def yonetici_karar(id):
+    """Yöneticinin onayı veya reddi."""
+    basvuru = Basvuru.query.get_or_404(id)
+    action = request.form.get("action")
+    notu = request.form.get("yonetici_notu", "")
+
+    basvuru.yonetici_notu = notu
+    basvuru.guncelleme_tarihi = datetime.utcnow()
+
+    if action == "onayla":
+        # Yönetici onay verirse Koordinatör okul seçecek
+        basvuru.degerlendirme_durumu = "okul_secimi"
+        flash("Yönetici onayı verildi. Başvuru 'Okul/Kurum Seçimi' aşamasına geçti.", "success")
+    elif action == "reddet":
+        # Yönetici reddederse süreç biter
+        basvuru.degerlendirme_durumu = "reddedildi"
+        flash("Başvuru Yönetici tarafından REDDEDİLDİ.", "danger")
+    
+    db.session.commit()
+    return redirect(url_for("dashboard"))
+
+
+@app.route("/basvuru/<int:id>/okul-sec", methods=["POST"])
+def okul_secimi_kaydet(id):
+    """Koordinatörün okul/kurum seçimi ve nihai onayı."""
+    basvuru = Basvuru.query.get_or_404(id)
+    okul = request.form.get("secilen_okul")
+
+    if not okul:
+        flash("Lütfen bir okul/kurum adı giriniz.", "warning")
+        return redirect(url_for("degerlendirme", id=id))
+
+    basvuru.secilen_okul = okul
+    basvuru.degerlendirme_durumu = "onaylandi"
+    basvuru.guncelleme_tarihi = datetime.utcnow()
+    
+    db.session.commit()
+    flash(f"Başvuru ({basvuru.basvuru_no}) için okul seçildi ve süreç TAMAMLANDI.", "success")
+    return redirect(url_for("dashboard"))
 
 
 @app.route("/basvuru/<int:id>/on-kontrol-kaydet", methods=["POST"])
@@ -684,7 +757,9 @@ def on_kontrol_kaydet(id):
     return jsonify({
         "status": "success", 
         "message": "Ön kontroller kaydedildi.",
-        "new_status": basvuru.basvuru_durumu
+        "new_status": kompleks_durum_metni_filter(basvuru),
+        "new_status_class": durum_renk_filter(basvuru.degerlendirme_durumu),
+        "new_status_icon": durum_ikon_filter(basvuru.degerlendirme_durumu)
     })
 
 
@@ -729,6 +804,67 @@ def mebbis_aktar():
 
     return redirect(url_for("dashboard"))
 
+
+@app.route("/degerlendiriciler")
+def degerlendiriciler():
+    """Değerlendirici yönetim sayfası."""
+    deg_list, is_yuku = _get_degerlendirici_stats()
+    return render_template("degerlendiriciler.html", deg_list=deg_list, is_yuku=is_yuku)
+
+@app.route("/degerlendiriciler/ekle", methods=["POST"])
+def degerlendirici_ekle():
+    ad = request.form.get("ad_soyad", "").strip().upper()
+    if ad:
+        if Degerlendirici.query.filter_by(ad_soyad=ad).first():
+            flash(f"{ad} zaten kayıtlı.", "warning")
+        else:
+            db.session.add(Degerlendirici(ad_soyad=ad, aktif=True))
+            db.session.commit()
+            flash(f"{ad} eklendi.", "success")
+    return redirect(url_for("degerlendiriciler"))
+
+@app.route("/degerlendiriciler/<int:id>/duzenle", methods=["POST"])
+def degerlendirici_duzenle(id):
+    d = Degerlendirici.query.get_or_404(id)
+    yeni_ad = request.form.get("ad_soyad", "").strip().upper()
+    eski_ad = d.ad_soyad
+    
+    if yeni_ad and yeni_ad != eski_ad:
+        # Mevcut atamalardaki isimleri de güncelle (tutarlılık için)
+        atamalar = BasvuruDegerlendirici.query.filter_by(degerlendirici_adi=eski_ad).all()
+        for atama in atamalar:
+            atama.degerlendirici_adi = yeni_ad
+        
+        d.ad_soyad = yeni_ad
+        db.session.commit()
+        flash("Değerlendirici ismi güncellendi.", "success")
+    
+    return redirect(url_for("degerlendiriciler"))
+
+@app.route("/degerlendiriciler/<int:id>/durum", methods=["POST"])
+def degerlendirici_durum_degistir(id):
+    d = Degerlendirici.query.get_or_404(id)
+    d.aktif = not d.aktif
+    db.session.commit()
+    durum_metin = "aktif edildi" if d.aktif else "devre dışı bırakıldı"
+    flash(f"{d.ad_soyad} {durum_metin}.", "info")
+    return redirect(url_for("degerlendiriciler"))
+
+@app.route("/degerlendiriciler/<int:id>/sil", methods=["POST"])
+def degerlendirici_sil(id):
+    d = Degerlendirici.query.get_or_404(id)
+    ad = d.ad_soyad
+    
+    # Ataması varsa silme, pasife almayı öner
+    atama_sayisi = BasvuruDegerlendirici.query.filter_by(degerlendirici_adi=ad).count()
+    if atama_sayisi > 0:
+        flash(f"{ad} isimli değerlendiricinin {atama_sayisi} adet görev kaydı olduğu için silinemez. Lütfen pasife alın.", "warning")
+    else:
+        db.session.delete(d)
+        db.session.commit()
+        flash(f"{ad} silindi.", "danger")
+    
+    return redirect(url_for("degerlendiriciler"))
 
 @app.route("/basvuru/<int:id>/sil", methods=["POST"])
 def basvuru_sil(id):
@@ -802,10 +938,12 @@ def proxy_belge():
 @app.template_filter("durum_renk")
 def durum_renk_filter(durum):
     renk_map = {
-        "bekliyor": "warning",
-        "devam": "info",
-        "tamamlandi": "success",
+        "bekliyor": "info",         # Ön Kontrol Bekliyor -> Mavi (Aynı metin: Ön Kontrol devam ediyor)
+        "devam": "info",            # Ön Kontrol Devam -> Mavi
+        "tamamlandi": "primary",    # Ön Kontrol Tamamlandı -> Lacivert/Mavi
         "on_degerlendirme": "primary",
+        "yonetici_onayinda": "orange", # Yönetici Onayı -> Turuncu/Farklı
+        "okul_secimi": "teal",      # Okul Seçimi -> Teal (Yeşilimsi)
         "onaylandi": "success",
         "reddedildi": "danger"
     }
@@ -818,6 +956,8 @@ def durum_ikon_filter(durum):
         "bekliyor": "bi-hourglass-split",
         "devam": "bi-pencil-square",
         "tamamlandi": "bi-check-circle",
+        "yonetici_onayinda": "bi-person-badge-fill",
+        "okul_secimi": "bi-building-check",
         "onaylandi": "bi-check-circle-fill",
         "reddedildi": "bi-x-circle-fill",
     }
@@ -829,11 +969,67 @@ def durum_metin_filter(durum):
     metin_map = {
         "bekliyor": "Bekliyor",
         "devam": "Devam Ediyor",
-        "tamamlandi": "Ön Değerlendirme Tamamlandı", # Bu iç durum için metni güncelleyelim
+        "tamamlandi": "Ön Değerlendirme Tamamlandı",
+        "yonetici_onayinda": "Yönetici Onayında",
+        "okul_secimi": "Okul/Kurum Seçimi Bekleniyor",
         "onaylandi": "ONAYLANDI",
         "reddedildi": "REDDEDİLDİ",
     }
     return metin_map.get(durum, "Bilinmiyor")
+
+
+@app.template_filter("kompleks_durum_metni")
+def kompleks_durum_metni_filter(b):
+    durum = b.degerlendirme_durumu
+    
+    # 1. Ön Kontrol (Bekliyor / Devam) -> "Ön Kontrol devam ediyor"
+    if durum in ['bekliyor', 'devam']:
+        return "Ön Kontrol devam ediyor"
+        
+    # 2. Ön Kontrol Tamamlandı (Değerlendirici YOKSA)
+    if durum == 'tamamlandi' and not b.degerlendiriciler:
+        return "Ön Kontrol tamamlandı"
+        
+    # 3. Değerlendiriciler İnceliyor (Tamamlandı + Değerlendirici VAR)
+    # Not: 'yonetici_onayinda' veya sonrası zaten ayrı durumlar
+    if durum == 'tamamlandi' and b.degerlendiriciler:
+        return "Değerlendiriciler İnceliyor"
+        
+    # 4. Yönetici Onayında
+    if durum == 'yonetici_onayinda':
+        return "Yönetici onayında"
+        
+    # 5. Okul Seçimi
+    if durum == 'okul_secimi':
+        return "Okul/Kurum seçimi bekleniyor"
+        
+    # 6. Tamamlananlar
+    if durum == 'onaylandi':
+        return "ONAYLANDI"
+    if durum == 'reddedildi':
+        return "REDDEDİLDİ"
+        
+    return durum or "Bilinmiyor"
+
+
+@app.route("/basvuru/<int:id>/geri-al", methods=["POST"])
+def basvuru_geri_al(id):
+    """Tamamlanan başvuruyu okul seçimi aşamasına geri alır (Yanlışlıkla tamamlama için)."""
+    basvuru = Basvuru.query.get_or_404(id)
+    
+    if basvuru.degerlendirme_durumu not in ['onaylandi', 'reddedildi']:
+        flash("Sadece tamamlanan başvurular geri alınabilir.", "warning")
+        return redirect(url_for("dashboard"))
+        
+    # Durumu bir önceki adım olan 'okul_secimi'ne çevir
+    # Eğer reddedildiyse ve yönetici notu varsa yine okul seçimine döner, yönetici onayı var sayılır
+    # Veya yönetici onayına mı dönmeli? Kullanıcı 'Okul Seçimi'ne dönsün dedi.
+    basvuru.degerlendirme_durumu = "okul_secimi"
+    basvuru.guncelleme_tarihi = datetime.utcnow()
+    
+    db.session.commit()
+    flash(f"Başvuru ({basvuru.basvuru_no}) 'Okul Seçimi' aşamasına geri alındı.", "success")
+    return redirect(url_for("tamamlanan_basvurular"))
 
 
 # ─── ANA ÇALIŞTIRMA ──────────────────────────────────────────────────────────

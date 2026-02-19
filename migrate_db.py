@@ -30,6 +30,20 @@ def migrate():
         except sqlite3.OperationalError:
             print("INFO: 'belge_enstitu_karari' zaten mevcut.")
 
+        print("Veritabanı guncelleniyor: 'secilen_okul' sutunu ekleniyor...")
+        try:
+            cursor.execute("ALTER TABLE basvuru ADD COLUMN secilen_okul TEXT")
+            print("OK: 'secilen_okul' eklendi.")
+        except sqlite3.OperationalError:
+            print("INFO: 'secilen_okul' zaten mevcut.")
+
+        print("Veritabanı guncelleniyor: 'yonetici_notu' sutunu ekleniyor...")
+        try:
+            cursor.execute("ALTER TABLE basvuru ADD COLUMN yonetici_notu TEXT")
+            print("OK: 'yonetici_notu' eklendi.")
+        except sqlite3.OperationalError:
+            print("INFO: 'yonetici_notu' zaten mevcut.")
+
         conn.commit()
         print("OK: Guncelleme basariyla tamamlandi!")
     except sqlite3.OperationalError as e:

@@ -20,11 +20,12 @@
         <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i>Listeye Dön
         </a>
-        {% set is_on_tamam = (basvuru.basvuru_durumu == 'Ön Değerlendirme Tamamlandı') %}
-        {% set status_class = 'primary' if is_on_tamam else basvuru.degerlendirme_durumu|durum_renk %}
-        <span class="badge bg-{{ status_class }}-subtle text-{{ status_class }} fs-6 py-2 px-3 shadow-sm">
+        {% set status_text = basvuru|kompleks_durum_metni %}
+        {% set status_class = basvuru.degerlendirme_durumu|durum_renk %}
+        <span class="badge bg-{{ status_class }}-subtle text-{{ status_class }} fs-6 py-2 px-3 shadow-sm"
+            id="mainStatusBadge">
             <i class="bi {{ basvuru.degerlendirme_durumu|durum_ikon }} me-1"></i>
-            {{ basvuru.basvuru_durumu or basvuru.degerlendirme_durumu|durum_metin }}
+            {{ status_text }}
         </span>
         <button type="button" class="btn btn-outline-secondary btn-lg px-3" onclick="window.print()" title="Yazdır">
             <i class="bi bi-printer me-1"></i>Yazdır
@@ -182,8 +183,8 @@
                             <i class="bi bi-person-circle deg-avatar"></i>
                             <span class="deg-name">{{ d }}</span>
                             <span
-                                class="deg-count badge bg-{{ 'danger' if is_yuku[d] > 5 else 'warning' if is_yuku[d] > 2 else 'success' }}-subtle text-{{ 'danger' if is_yuku[d] > 5 else 'warning' if is_yuku[d] > 2 else 'success' }}">
-                                {{ is_yuku[d] }} başvuru
+                                class="deg-count badge bg-{{ 'danger' if is_yuku[d].toplam > 5 else 'warning' if is_yuku[d].toplam > 2 else 'success' }}-subtle text-{{ 'danger' if is_yuku[d].toplam > 5 else 'warning' if is_yuku[d].toplam > 2 else 'success' }}">
+                                {{ is_yuku[d].toplam }} Aktif | Tamamlanan: {{ is_yuku[d].son_30_gun }}
                             </span>
                         </div>
                     </label>
@@ -249,8 +250,8 @@
                             </td>
                             <td>
                                 <input type="text" name="on_kontrol_aciklama_{{ ok.sira }}"
-                                    value="{{ ok.aciklama or '' }}" class="form-control form-control-sm"
-                                    placeholder="Açıklama...">
+                                    class="form-control form-control-sm aciklama-input" placeholder="Açıklama..."
+                                    value="{{ ok.aciklama or '' }}">
                             </td>
                         </tr>
                         {% endfor %}
@@ -302,8 +303,7 @@
                         <tr>
                             <th class="ps-4 text-center" style="width: 60px;">No</th>
                             <th>Kriter</th>
-                            <th class="text-center" style="width: 100px;">Uygun</th>
-                            <th class="text-center" style="width: 100px;">Uygun Değil</th>
+                            <th class="text-center" style="width: 150px;">Uygun Değil</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -315,13 +315,13 @@
                             </td>
                             <td class="kriter-metin">{{ k.metin }}</td>
                             <td class="text-center">
-                                <input type="radio" name="kriter_sonuc_{{ k.no }}" value="UYGUN"
-                                    class="form-check-input radio-uygun" {{ 'checked' if k.sonuc=='UYGUN' }}>
-                            </td>
-                            <td class="text-center">
-                                <input type="radio" name="kriter_sonuc_{{ k.no }}" value="UYGUN_DEGIL"
-                                    class="form-check-input radio-uygun-degil" {{ 'checked' if k.sonuc=='UYGUN_DEGIL'
-                                    }}>
+                                <input type="hidden" name="kriter_sonuc_{{ k.no }}" id="hidden_kriter_{{ k.no }}"
+                                    value="{{ k.sonuc if k.sonuc in ['UYGUN', 'UYGUN_DEGIL'] else 'UYGUN' }}">
+                                <div class="form-check d-flex justify-content-center">
+                                    <input class="form-check-input kriter-check" type="checkbox"
+                                        data-target="hidden_kriter_{{ k.no }}" value="UYGUN_DEGIL" {{ 'checked' if
+                                        k.sonuc=='UYGUN_DEGIL' }}>
+                                </div>
                             </td>
                         </tr>
                         <!-- Açıklama satırı (Uygun Değil seçilince açılır) -->
@@ -358,7 +358,12 @@
         </div>
     </div>
 
-    <!-- Alt Kaydet + Yazdır Butonları -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- BÖLÜM 6: YÖNETİCİ & KOORDİNATÖR İŞLEMLERİ (Duruma Göre)          -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+    <!-- STANDART DEĞERLENDİRME BUTONLARI (Sadece diğer durumlar hariçse) -->
+    {% if basvuru.degerlendirme_durumu != 'yonetici_onayinda' and basvuru.degerlendirme_durumu != 'okul_secimi' %}
     <div class="d-flex justify-content-between align-items-center mb-5 no-print p-3 bg-white rounded shadow-sm border">
         <button type="button" class="btn btn-outline-secondary btn-lg px-4" onclick="window.print()">
             <i class="bi bi-printer me-2"></i>Yazdır
@@ -370,11 +375,12 @@
                 <i class="bi bi-x-circle me-2"></i>BAŞVURUYU REDDET
             </button>
             <button type="submit" class="btn btn-success btn-lg px-4"
-                onclick="document.getElementById('formAction').value='onayla'; return confirm('Başvuruyu ONAYLAMAK istediğinizden emin misiniz?')">
-                <i class="bi bi-check2-all me-2"></i>BAŞVURUYU ONAYLA
+                onclick="document.getElementById('formAction').value='onayla'; return confirm('Başvuruyu YÖNETİCİ ONAYINA göndermek istediğinizden emin misiniz?')">
+                <i class="bi bi-send me-2"></i>YÖNETİCİYE GÖNDER
             </button>
         </div>
     </div>
+    {% endif %}
 
     <!-- Print Footer (Visible only when printing) -->
     <div class="print-footer d-none">
@@ -394,6 +400,67 @@
         </div>
     </div>
 </form>
+
+<!-- YÖNETİCİ & KOORDİNATÖR İŞLEMLERİ (Form Dışı - Burada) -->
+{% if basvuru.degerlendirme_durumu == 'yonetici_onayinda' %}
+<div class="card glass-card mb-4 border-warning">
+    <div class="card-header bg-warning-subtle text-warning-dark">
+        <h5 class="mb-0"><i class="bi bi-person-badge-fill me-2"></i>Yönetici Kararı</h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-1"></i>Bu başvuru değerlendirici süreçlerinden geçmiş ve yönetici onayına
+            sunulmuştur.
+        </div>
+        <form action="{{ url_for('yonetici_karar', id=basvuru.id) }}" method="POST">
+            <div class="mb-3">
+                <label class="form-label fw-bold">Yönetici Notu / Gerekçesi:</label>
+                <textarea name="yonetici_notu" class="form-control" rows="3"
+                    placeholder="Onay veya ret gerekçenizi buraya yazabilirsiniz..."></textarea>
+            </div>
+            <div class="d-flex gap-3">
+                <button type="submit" name="action" value="reddet" class="btn btn-danger btn-lg flex-grow-1"
+                    onclick="return confirm('Yönetici olarak bu başvuruyu REDDETMEK istediğinize emin misiniz?')">
+                    <i class="bi bi-x-circle me-1"></i>YÖNETİCİ REDDETTİ
+                </button>
+                <button type="submit" name="action" value="onayla" class="btn btn-success btn-lg flex-grow-1"
+                    onclick="return confirm('Yönetici olarak bu başvuruyu ONAYLAMAK istediğinize emin misiniz? Sonraki adımda okul seçimi yapılacaktır.')">
+                    <i class="bi bi-check-circle-fill me-1"></i>YÖNETİCİ ONAYLADI
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% elif basvuru.degerlendirme_durumu == 'okul_secimi' %}
+<div class="card glass-card mb-4 border-primary">
+    <div class="card-header bg-primary-subtle text-primary">
+        <h5 class="mb-0"><i class="bi bi-building-check me-2"></i>Okul / Kurum Seçimi</h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-success">
+            <i class="bi bi-check-circle-fill me-1"></i>Yönetici onayı alınmıştır. Lütfen uygulamanın yapılacağı
+            okulu/kurumu seçerek süreci tamamlayın.
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-bold">Yönetici Notu:</label>
+            <div class="p-3 bg-light rounded border">
+                {{ basvuru.yonetici_notu or 'Not girilmemiş.' }}
+            </div>
+        </div>
+        <form action="{{ url_for('okul_secimi_kaydet', id=basvuru.id) }}" method="POST">
+            <div class="mb-3">
+                <label class="form-label fw-bold">Uygulama Yapılacak Okul / Kurum Adı:</label>
+                <input type="text" name="secilen_okul" class="form-control form-control-lg" required
+                    placeholder="Örn: Kocasinan Anadolu Lisesi">
+                <div class="form-text">Bu bilgi resmi yazıda kullanılacaktır.</div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg w-100">
+                <i class="bi bi-check-circle-fill me-1"></i>OKUL / KURUM SEÇİMİNİ KAYDET
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
 
 <!-- Belge Görüntüleme Modalı -->
 <div class="modal fade" id="belgeModal" tabindex="-1" aria-hidden="true">
@@ -464,20 +531,23 @@
     // Radyo Buton Deselect (Tıklayınca Seçimi Kaldırabilme)
     // ═══════════════════════════════════════════════════════════════
     document.querySelectorAll('input[type="radio"]').forEach(radio => {
+        // Use mousedown to capture state before click
+        radio.addEventListener('mousedown', function () {
+            this.dataset.wasChecked = this.checked;
+        });
+
         radio.addEventListener('click', function (e) {
-            if (this.wasChecked) {
+            if (this.dataset.wasChecked === 'true') {
                 this.checked = false;
-                this.wasChecked = false;
-                // Değişiklik olayını tetikle (renklendirme vb. için)
+                this.dataset.wasChecked = 'false';
+                // Trigger change to update UI
                 this.dispatchEvent(new Event('change', { bubbles: true }));
             } else {
-                // Aynı gruptaki diğer radyo butonları için wasChecked'i sıfırla
-                document.querySelectorAll(`input[name="${this.name}"]`).forEach(r => r.wasChecked = false);
-                this.wasChecked = true;
+                // Reset other radios in group
+                document.querySelectorAll(`input[name="${this.name}"]`).forEach(r => r.dataset.wasChecked = 'false');
+                this.dataset.wasChecked = 'true';
             }
         });
-        // Sayfa yüklendiğinde mevcut seçili olanları işaretle
-        if (radio.checked) radio.wasChecked = true;
     });
 
     // ═══════════════════════════════════════════════════════════════
@@ -487,112 +557,109 @@
         radio.addEventListener('change', function () {
             const row = this.closest('tr');
             row.classList.remove('on-kontrol-var', 'on-kontrol-yok', 'on-kontrol-na');
-            if (!this.checked) return; // Seçim kaldırılmışsa renk verme
 
-            if (this.value === 'VAR') row.classList.add('on-kontrol-var');
-            else if (this.value === 'YOK') row.classList.add('on-kontrol-yok');
-            else if (this.value === 'N/A') row.classList.add('on-kontrol-na');
+            const aciklamaInput = row.querySelector('.aciklama-input, input[type="text"]');
+            if (this.checked) {
+                if (this.value === 'YOK') {
+                    row.classList.add('on-kontrol-yok');
+                    if (aciklamaInput) aciklamaInput.focus();
+                } else if (this.value === 'VAR') {
+                    row.classList.add('on-kontrol-var');
+                } else if (this.value === 'N/A') {
+                    row.classList.add('on-kontrol-na');
+                }
+            }
+            onKontrolDurumKontrol();
         });
     });
 
     // ═══════════════════════════════════════════════════════════════
-    // Tümünü uygun yap
+    // Kriter Checkbox Mantığı
     // ═══════════════════════════════════════════════════════════════
-    document.getElementById('tumunuUygun')?.addEventListener('click', function () {
-        document.querySelectorAll('.radio-uygun').forEach(r => {
-            r.checked = true;
-            const row = r.closest('tr');
-            row.className = 'kriter-row kriter-uygun';
-            // Açıklama satırını gizle
-            const no = row.dataset.kriterNo;
-            const aciklamaRow = document.querySelector(`[data-aciklama-for="${no}"]`);
-            if (aciklamaRow) aciklamaRow.classList.remove('show');
-        });
-        ozetiGuncelle();
-    });
-
-    // ═══════════════════════════════════════════════════════════════
-    // Temizle
-    // ═══════════════════════════════════════════════════════════════
-    document.getElementById('tumunuTemizle')?.addEventListener('click', function () {
-        document.querySelectorAll('#kriterTablosu input[type="radio"]').forEach(r => {
-            r.checked = false;
-        });
-        document.querySelectorAll('.kriter-row').forEach(row => {
-            row.className = 'kriter-row';
-        });
-        document.querySelectorAll('.kriter-aciklama-row').forEach(row => {
-            row.classList.remove('show');
-        });
-        ozetiGuncelle();
-    });
-
-    // ═══════════════════════════════════════════════════════════════
-    // Kriter satır renklendirme + açıklama alanı toggle
-    // ═══════════════════════════════════════════════════════════════
-    document.querySelectorAll('#kriterTablosu input[type="radio"]').forEach(radio => {
-        radio.addEventListener('change', function () {
+    document.querySelectorAll('.kriter-check').forEach(checkbox => {
+        checkbox.addEventListener('change', function () {
             const row = this.closest('tr');
             const no = row.dataset.kriterNo;
+            const hiddenInput = document.getElementById(`hidden_kriter_${no}`);
             const aciklamaRow = document.querySelector(`[data-aciklama-for="${no}"]`);
+            const aciklamaInput = aciklamaRow ? aciklamaRow.querySelector('textarea') : null;
 
-            row.classList.remove('kriter-uygun', 'kriter-uygun-degil');
-
-            if (!this.checked) {
-                if (aciklamaRow) aciklamaRow.classList.remove('show');
-            } else if (this.value === 'UYGUN') {
+            if (this.checked) {
+                // UYGUN DEĞİL
+                if (hiddenInput) hiddenInput.value = 'UYGUN_DEGIL';
+                row.classList.remove('kriter-uygun');
+                row.classList.add('kriter-uygun-degil');
+                if (aciklamaRow) aciklamaRow.classList.add('show');
+                if (aciklamaInput) aciklamaInput.focus();
+            } else {
+                // UYGUN
+                if (hiddenInput) hiddenInput.value = 'UYGUN';
+                row.classList.remove('kriter-uygun-degil');
                 row.classList.add('kriter-uygun');
                 if (aciklamaRow) aciklamaRow.classList.remove('show');
-            } else if (this.value === 'UYGUN_DEGIL') {
-                row.classList.add('kriter-uygun-degil');
-                if (aciklamaRow) {
-                    aciklamaRow.classList.add('show');
-                    setTimeout(() => {
-                        const textarea = aciklamaRow.querySelector('textarea');
-                        if (textarea) textarea.focus();
-                    }, 300);
-                }
             }
             ozetiGuncelle();
         });
     });
 
     // ═══════════════════════════════════════════════════════════════
+    // Kriter Kontrol Butonları
+    // ═══════════════════════════════════════════════════════════════
+    document.getElementById('tumunuUygun')?.addEventListener('click', function () {
+        document.querySelectorAll('.kriter-check').forEach(cb => {
+            cb.checked = false;
+            cb.dispatchEvent(new Event('change'));
+        });
+    });
+
+    document.getElementById('tumunuTemizle')?.addEventListener('click', function () {
+        document.querySelectorAll('.kriter-check').forEach(cb => {
+            cb.checked = false;
+            const row = cb.closest('tr');
+            row.classList.remove('kriter-uygun', 'kriter-uygun-degil');
+            const no = row.dataset.kriterNo;
+            const aciklamaRow = document.querySelector(`[data-aciklama-for="${no}"]`);
+            if (aciklamaRow) aciklamaRow.classList.remove('show');
+            const hiddenInput = document.getElementById(`hidden_kriter_${no}`);
+            if (hiddenInput) hiddenInput.value = 'UYGUN';
+        });
+        ozetiGuncelle();
+    });
+
+    // ═══════════════════════════════════════════════════════════════
     // Uygun Değil Özeti — dinamik güncelleme
     // ═══════════════════════════════════════════════════════════════
     function ozetiGuncelle() {
-        const uygunDegilRadios = document.querySelectorAll('.radio-uygun-degil:checked');
+        // We now check for checkboxes in Criteria section
+        const uygunDegilChecks = document.querySelectorAll('.kriter-check:checked');
         const ozetKart = document.getElementById('ozetKart');
         const ozetIcerik = document.getElementById('ozetIcerik');
         const ozetSayac = document.getElementById('ozetSayac');
 
-        if (uygunDegilRadios.length === 0) {
+        if (!ozetKart || !ozetIcerik || !ozetSayac) return;
+
+        if (uygunDegilChecks.length === 0) {
             ozetKart.style.display = 'none';
             return;
         }
 
         ozetKart.style.display = 'block';
 
-        // Toplam kriter sayısını bul
         const toplamKriter = document.querySelectorAll('.kriter-row').length;
-        const uygunSayisi = document.querySelectorAll('.radio-uygun:checked').length;
-
-        ozetSayac.textContent = `${uygunDegilRadios.length} / ${toplamKriter}`;
+        ozetSayac.textContent = `${uygunDegilChecks.length} / ${toplamKriter}`;
 
         let html = `<div class="mb-3">
-            <strong>Toplam ${toplamKriter} kriterden ${uygunDegilRadios.length} tanesi uygun değil bulunmuştur.</strong>
-            ${uygunSayisi > 0 ? ` <span class="text-success">(${uygunSayisi} kriter uygun)</span>` : ''}
+            <strong>Toplam ${toplamKriter} kriterden ${uygunDegilChecks.length} tanesi uygun değil bulunmuştur.</strong>
         </div>`;
 
         html += '<div>';
-        uygunDegilRadios.forEach(radio => {
-            const row = radio.closest('tr');
+        uygunDegilChecks.forEach(cb => {
+            const row = cb.closest('tr');
             const no = row.dataset.kriterNo;
             const metin = row.querySelector('.kriter-metin')?.textContent?.trim() || '';
             const aciklamaRow = document.querySelector(`[data-aciklama-for="${no}"]`);
             const aciklama = aciklamaRow?.querySelector('textarea')?.value?.trim() || '';
 
-            // Kriter metnini kısalt (ilk 120 karakter)
             const kisaMetin = metin.length > 120 ? metin.substring(0, 120) + '...' : metin;
 
             html += `<div class="ozet-item">
@@ -607,55 +674,41 @@
         ozetIcerik.innerHTML = html;
     }
 
-    // Açıklama textarea'larındaki değişikliklerde de özeti güncelle
+    // Textarea changes update summary
     document.querySelectorAll('.kriter-aciklama-input').forEach(textarea => {
         textarea.addEventListener('input', ozetiGuncelle);
     });
 
-    // Sayfa yüklendiğinde özeti hesapla
-    ozetiGuncelle();
-
     // ═══════════════════════════════════════════════════════════════
-    // Ön Kontrol Kaydetme ve WhatsApp Mesajı
+    // Ön Kontrol Durum Kontrol (Save Button Text/State)
     // ═══════════════════════════════════════════════════════════════
     const btnOnKontrolKaydet = document.getElementById('btnOnKontrolKaydet');
-    const onKontrolRadios = document.querySelectorAll('#onKontrolTablosu input[type="radio"]');
 
     function onKontrolDurumKontrol() {
         const rows = document.querySelectorAll('#onKontrolTablosu tbody tr');
         let secilenSayisi = 0;
-
         rows.forEach(row => {
-            if (row.querySelector('input[type="radio"]:checked')) {
-                secilenSayisi++;
-            }
+            if (row.querySelector('input[type="radio"]:checked')) secilenSayisi++;
         });
 
         if (btnOnKontrolKaydet) {
-            // En az bir tane seçilmişse kaydetmeye izin ver
-            btnOnKontrolKaydet.disabled = secilenSayisi === 0;
+            btnOnKontrolKaydet.disabled = false;
+            btnOnKontrolKaydet.innerHTML = `<i class="bi bi-save me-1"></i>Taslağı Kaydet (${secilenSayisi}/${rows.length})`;
+            btnOnKontrolKaydet.className = 'btn btn-sm btn-light text-primary fw-bold';
 
-            if (secilenSayisi > 0 && secilenSayisi < rows.length) {
-                btnOnKontrolKaydet.innerHTML = `<i class="bi bi-save me-1"></i>Taslağı Kaydet (${secilenSayisi}/${rows.length})`;
-                btnOnKontrolKaydet.className = 'btn btn-sm btn-light text-primary fw-bold';
-            } else if (secilenSayisi === rows.length) {
-                btnOnKontrolKaydet.innerHTML = '<i class="bi bi-check-all me-1"></i>Ön Kontrolü Tamamla';
+            if (secilenSayisi === rows.length) {
+                btnOnKontrolKaydet.innerHTML = `<i class="bi bi-check-all me-1"></i>Ön Kontrolü Tamamla (${secilenSayisi}/${rows.length})`;
                 btnOnKontrolKaydet.className = 'btn btn-sm btn-light text-orange fw-bold';
-            } else { // secilenSayisi === 0
-                btnOnKontrolKaydet.innerHTML = '<i class="bi bi-save me-1"></i>Kaydet';
-                btnOnKontrolKaydet.className = 'btn btn-sm btn-light text-secondary fw-bold';
             }
         }
     }
 
-    onKontrolRadios.forEach(r => r.addEventListener('change', onKontrolDurumKontrol));
-
     document.getElementById('btnOnKontrolTemizle')?.addEventListener('click', function () {
         if (confirm('Tüm ön kontrol seçimlerini temizlemek istediğinizden emin misiniz?')) {
-            onKontrolRadios.forEach(r => r.checked = false);
+            document.querySelectorAll('#onKontrolTablosu input[type="radio"]').forEach(r => r.checked = false);
             document.querySelectorAll('#onKontrolTablosu input[type="text"]').forEach(i => i.value = '');
             document.querySelectorAll('#onKontrolTablosu tbody tr').forEach(tr => {
-                tr.classList.remove('table-success', 'table-danger', 'table-warning');
+                tr.classList.remove('on-kontrol-var', 'on-kontrol-yok', 'on-kontrol-na', 'table-success', 'table-danger', 'table-warning');
             });
             onKontrolDurumKontrol();
             alert('Ön kontrol seçimleri temizlendi.');
@@ -664,7 +717,6 @@
 
     btnOnKontrolKaydet?.addEventListener('click', function () {
         const formData = new FormData(document.getElementById('degerlendirmeForm'));
-
         fetch("{{ url_for('on_kontrol_kaydet', id=basvuru.id) }}", {
             method: 'POST',
             body: formData
@@ -672,33 +724,27 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    // Durum badge'ini güncelle
-                    const statusBadge = document.querySelector('.badge.fs-6');
+                    const statusBadge = document.getElementById('mainStatusBadge');
                     if (statusBadge && data.new_status) {
-                        statusBadge.innerHTML = `<i class="bi bi-check-all me-1"></i>${data.new_status}`;
-                        statusBadge.className = 'badge bg-info-subtle text-info fs-6 py-2 px-3';
+                        const iconAttr = data.new_status_icon || 'bi-check-all';
+                        statusBadge.innerHTML = `<i class="bi ${iconAttr} me-1"></i>${data.new_status}`;
+                        const cls = data.new_status_class || 'info';
+                        statusBadge.className = `badge bg-${cls}-subtle text-${cls} fs-6 py-2 px-3 shadow-sm`;
                     }
-
-                    // WhatsApp Mesajı Hazırla
                     hazirlaWhatsappMesaji();
-
-                    // Başarı bildirimi
                     alert("Ön kontrol başarıyla kaydedildi.");
                 } else {
                     alert("Hata: " + (data.message || "Kaydedilemedi."));
                 }
             })
-            .catch(error => {
-                console.error('Hata:', error);
-                alert("Kaydetme sırasında bir hata oluştu.");
-            });
+            .catch(error => { console.error('Hata:', error); alert("Kaydetme sırasında bir hata oluştu."); });
     });
 
+    // ═══════════════════════════════════════════════════════════════
+    // WhatsApp Mesajı
+    // ═══════════════════════════════════════════════════════════════
     function hazirlaWhatsappMesaji(scroll = false) {
-        const adSoyad = "{{ basvuru.ad_soyad }}";
         const basvuruNo = "{{ basvuru.basvuru_no }}";
-
-        // Seçilen değerlendiricileri al
         const secilenDegerlerlendiriciler = [];
         document.querySelectorAll('.deg-checkbox:checked').forEach(cb => {
             secilenDegerlerlendiriciler.push(cb.value);
@@ -706,59 +752,48 @@
 
         const yokMaddeleri = [];
         let evrakEksik = false;
-
-        // Belge sayılan maddelerin sıra numaraları: 1, 3, 4, 5, 6, 7, 8, 9, 10
         const belgeSiralar = [1, 3, 4, 5, 6, 7, 8, 9, 10];
 
-        document.querySelectorAll('#onKontrolTablosu tbody tr').forEach((row, index) => {
+        document.querySelectorAll('#onKontrolTablosu tbody tr').forEach((row) => {
             const radYok = row.querySelector('.radio-yok');
-            const sira = parseInt(radYok.name.split('_').pop()); // on_kontrol_durum_X -> X
+            if (!radYok) return;
 
-            if (radYok && radYok.checked) {
-                const maddeAdi = row.querySelector('td:first-child').textContent.trim();
-                const aciklama = row.querySelector('input[type="text"]').value.trim();
+            const parts = radYok.name.split('_');
+            const sira = parseInt(parts[parts.length - 1]);
+            const aciklama = row.querySelector('input[type="text"]')?.value?.trim() || '';
+
+            if (radYok.checked) {
+                const maddeAdi = row.querySelector('td:first-child')?.textContent?.trim() || `Madde ${sira}`;
                 yokMaddeleri.push({ ad: maddeAdi, not: aciklama });
-
-                // Eğer bu madde bir "belge" ise evrak durumunu eksik yap
-                if (belgeSiralar.includes(sira)) {
-                    evrakEksik = true;
-                }
+                if (belgeSiralar.includes(sira)) evrakEksik = true;
+            } else if (aciklama.length > 0) {
+                const maddeAdi = row.querySelector('td:first-child')?.textContent?.trim() || `Madde ${sira}`;
+                let statusText = "(Seçilmedi)";
+                if (row.querySelector('.radio-var')?.checked) statusText = "(VAR)";
+                if (row.querySelector('.radio-na')?.checked) statusText = "(N/A)";
+                yokMaddeleri.push({ ad: maddeAdi + " " + statusText, not: aciklama });
             }
         });
 
-        // Yeni Şablon Oluşturma
-        let mesaj = `*${basvuruNo}*\n\n`;
-
-        mesaj += `📌 Atanan değerlendiriciler:\n`;
+        let mesaj = `*${basvuruNo}*\n\n📌 Atanan değerlendiriciler:\n`;
         if (secilenDegerlerlendiriciler.length > 0) {
             secilenDegerlerlendiriciler.forEach(d => mesaj += `👤 ${d}\n`);
         } else {
             mesaj += `(Değerlendirici seçilmedi)\n`;
         }
-        mesaj += `\n`;
-
-        // Evrak durumu sadece "belge" olan kalemlere göre belirlenir
-        if (evrakEksik) {
-            mesaj += `📄 Evraklar: ❌ Eksik\n\n`;
-        } else {
-            mesaj += `📄 Evraklar: ✅ Tam\n\n`;
-        }
-
-        mesaj += `📝 Ön değerlendirme notları:\n`;
+        mesaj += `\n📄 Evraklar: ${evrakEksik ? '❌ Eksik' : '✅ Tam'}\n\n📝 Ön değerlendirme notları:\n`;
         if (yokMaddeleri.length > 0) {
-            yokMaddeleri.forEach(m => {
-                mesaj += `* ${m.ad}${m.not ? ' (' + m.not + ')' : ''}\n`;
-            });
+            yokMaddeleri.forEach(m => { mesaj += `* ${m.ad}${m.not ? ' (' + m.not + ')' : ''}\n`; });
         } else {
             mesaj += `* Evraklar uygun bulunmuştur.\n* [Diğer notlarınızı buraya ekleyebilirsiniz]`;
         }
 
-        const panel = document.getElementById('whatsappPanel');
         const icerik = document.getElementById('whatsappIcerik');
-        icerik.value = mesaj;
-        panel.style.display = 'block';
-        if (scroll) {
-            panel.scrollIntoView({ behavior: 'smooth' });
+        if (icerik) icerik.value = mesaj;
+        const panel = document.getElementById('whatsappPanel');
+        if (panel) {
+            panel.style.display = 'block';
+            if (scroll) panel.scrollIntoView({ behavior: 'smooth' });
         }
     }
 
@@ -778,27 +813,21 @@
         });
     };
 
-    // Sayfa yüklendiğinde kontrol et
+    // Initialize
     onKontrolDurumKontrol();
+    ozetiGuncelle();
+    if (document.querySelectorAll('.radio-yok:checked').length > 0) hazirlaWhatsappMesaji();
 
-    // Eğer 'YOK' olan maddeler varsa WhatsApp panelini otomatik göster
-    const hasYok = document.querySelectorAll('.radio-yok:checked').length > 0;
-    if (hasYok) {
-        hazirlaWhatsappMesaji();
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // Form değişiklik uyarısı
-    // ═══════════════════════════════════════════════════════════════
+    // Form Change Warning
     let formChanged = false;
-    document.getElementById('degerlendirmeForm').addEventListener('change', () => formChanged = true);
-    document.getElementById('degerlendirmeForm').addEventListener('input', () => formChanged = true);
+    const form = document.getElementById('degerlendirmeForm');
+    if (form) {
+        form.addEventListener('change', () => formChanged = true);
+        form.addEventListener('input', () => formChanged = true);
+        form.addEventListener('submit', () => formChanged = false);
+    }
     window.addEventListener('beforeunload', (e) => {
-        if (formChanged) {
-            e.preventDefault();
-            e.returnValue = '';
-        }
+        if (formChanged) { e.preventDefault(); e.returnValue = ''; }
     });
-    document.getElementById('degerlendirmeForm').addEventListener('submit', () => formChanged = false);
 </script>
 {% endblock %}

@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="tr">
+<!-- [Head] start -->
+<head>
+    <title>Araştırma Uygulama İzinleri Başvuru ve Değerlendirme Sistemi</title>
+    <!-- [Meta] -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="T.C. Milli Eğitim Bakanlığı bünyesindeki kurumlarda yapılacak araştırma izin başvuruları ve süreçlerinin yönetim sistemidir.">
+    <meta name="keywords" content="Meb, Milli Eğitim Bakanlığı, Ttkb, Talim ve Terbiye Kurulu Bakanlığı, Araştırma izin başvurusu, Araştırma izinleri">
+    <meta name="author" content="Meb">
+
+    <!-- [Favicon] icon -->
+    <link rel="icon" href="/panel/assets/img/favicon.ico" type="image/x-icon">
+    <!-- data tables css -->
+    <link rel="stylesheet" href="/panel/assets/css/plugins/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="/panel/assets/css/plugins/buttons.bootstrap5.min.css">
+    <!-- [Font] Family -->
+    <link rel="stylesheet" href="/panel/assets/fonts/inter/inter.css" id="main-font-link" />
+    <!-- [Tabler Icons] https://tablericons.com -->
+    <link rel="stylesheet" href="/panel/assets/fonts/tabler-icons.min.css" >
+    <!-- [Feather Icons] https://feathericons.com -->
+    <link rel="stylesheet" href="/panel/assets/fonts/feather.css" >
+    <!-- [Material Icons] https://fonts.google.com/icons -->
+    <link rel="stylesheet" href="/panel/assets/fonts/material.css" >
+    <!-- [Template CSS Files] -->
+    <link rel="stylesheet" href="/panel/assets/css/style.css" id="main-style-link" >
+    <link rel="stylesheet" href="/panel/assets/css/style-preset.css" >
+    <link rel="stylesheet" href="/panel/assets/css/custom.css" >
+    <!-- [Multiple Select] Okul Kurum Seç -->
+<!--    <link rel="stylesheet" href="/panel/assets/css/coreui.min.css">-->
+</head>
+<!-- [Head] end -->
+<!-- [Body] Start -->
+<body data-pc-preset="preset-1" data-pc-sidebar-caption="true" data-pc-direction="ltr" data-pc-theme_contrast="" data-pc-theme="light">
+<!-- [ Pre-loader ] start -->
+<div class="loader-bg">
+    <div class="loader-track">
+        <div class="loader-fill"></div>
+    </div>
+</div>
+<!-- [ Pre-loader ] End --><!-- [ Sidebar Menu ] start -->
+<nav class="pc-sidebar">
+    <div class="navbar-wrapper">
+        <div class="m-header-hp">
+            <img src="/panel/assets/img/meb-logo-yazili.png" class="img-fluid logo-lg" alt="logo">
+        </div>
+        <div class="navbar-content">
+            <div class="card pc-user-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+<!--                            <img src="/panel/assets/img/user4.png" alt="user-image" class="user-avtar wid-45 rounded-circle" />-->
+                            <svg class="pc-icon">
+                                <use xlink:href="#custom-user"></use>
+                            </svg>
+                        </div>
+                        <div class="flex-grow-1 ms-3 me-2">
+                            <h6 class="mb-0">YAVUZ MACUN</h6>
+                        </div>
+                        <a class="btn btn-icon btn-link-secondary avtar" data-bs-toggle="collapse" href="#pc_sidebar_userlink">
+                            <svg class="pc-icon">
+                                <use xlink:href="#custom-sort-outline"></use>
+                            </svg>
+                        </a>
+                    </div>
+                    <div class="collapse pc-user-links" id="pc_sidebar_userlink">
+                        <div class="pt-3">
+<!--                            <a href="javascript:void(0)" id="lock">-->
+<!--                                <i class="ti ti-lock"></i>-->
+<!--                                <span>Ekranı Kilitle</span>-->
+<!--                            </a>-->
+                            <a href="javascript:void(0)" id="logout">
+                                <i class="ti ti-power"></i>
+                                <span>Oturumu Kapat</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <ul class="pc-navbar">
+
+                <!--
+                    Başvuru İşlemleri
+                -->
+
+                
+
+
+                <!--
+                    Değerlendirme İşlemleri
+                -->
+
+                                        <li class="pc-item">
+                            <a href="/panel/arastirma-uygulamalari/bekleyen-islemler" class="pc-link">
+                                <span class="pc-micon">
+                                  <svg class="pc-icon">
+                                    <use xlink:href="#custom-refresh-2"></use>
+                                  </svg>
+                                </span>
+                                <span class="pc-mtext">Bekleyen İşlemler</span>
+                            </a>
+                        </li>
+                        <li class="pc-item">
+                            <a href="/panel/arastirma-uygulamalari/tamamlanan-islemler" class="pc-link">
+                                <span class="pc-micon">
+                                  <svg class="pc-icon">
+                                    <use xlink:href="#custom-notification-status"></use>
+                                  </svg>
+                                </span>
+                                <span class="pc-mtext">Tamamlanan İşlemler</span>
+                            </a>
+                        </li>
+                        <li class="pc-item">
+                            <a href="/panel/gorus-oneri-bildir" class="pc-link">
+                                <span class="pc-micon">
+                                  <svg class="pc-icon">
+                                    <use xlink:href="#custom-message-2"></use>
+                                  </svg>
+                                </span>
+                                <span class="pc-mtext">Görüş ve Öneri Bildir</span>
+                            </a>
+                        </li>
+                    
+                                            <li class="pc-item">
+                            <a href="/panel/yonetim/yetkilendirme" class="pc-link">
+                                <span class="pc-micon">
+                                  <svg class="pc-icon">
+                                    <use xlink:href="#custom-shield"></use>
+                                  </svg>
+                                </span>
+                                <span class="pc-mtext">Yetkilendirme</span>
+                            </a>
+                        </li>
+                        
+                    
+                                </ul>
+        </div>
+    </div>
+</nav>
+<!-- [ Sidebar Menu ] end --><!-- [ Header Topbar ] start -->
+<header class="pc-header">
+    <div class="header-wrapper"> <!-- [Mobile Media Block] start -->
+        <div class="me-auto pc-mob-drp">
+            <ul class="list-unstyled">
+                <!-- ======= Menu collapse Icon ===== -->
+                <li class="pc-h-item pc-sidebar-collapse">
+                    <a href="#" class="pc-head-link ms-0" id="sidebar-hide">
+                        <i class="ti ti-menu-2"></i>
+                    </a>
+                </li>
+                <li class="pc-h-item pc-sidebar-popup">
+                    <a href="#" class="pc-head-link ms-0" id="mobile-collapse">
+                        <i class="ti ti-menu-2"></i>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <!-- [Mobile Media Block end] -->
+        <div class="ms-auto">
+            <ul class="list-unstyled">
+                <li class="dropdown pc-h-item">
+                    <a
+                            class="pc-head-link dropdown-toggle arrow-none me-0"
+                            data-bs-toggle="dropdown"
+                            href="#"
+                            role="button"
+                            aria-haspopup="false"
+                            aria-expanded="false"
+                    >
+                        <svg class="pc-icon">
+                            <use xlink:href="#custom-notification"></use>
+                        </svg>
+<!--                        <span class="badge bg-success pc-h-badge">3</span>-->
+                    </a>
+                    <div class="dropdown-menu dropdown-notification dropdown-menu-end pc-h-dropdown">
+                        <div class="dropdown-header d-flex align-items-center justify-content-between">
+                            <h5 class="m-0">Bildirimler</h5>
+                        </div>
+<!--                        <div class="dropdown-body text-wrap header-notification-scroll position-relative" style="max-height: calc(100vh - 215px)">-->
+<!--                            <div class="card mb-2">-->
+<!--                                <div class="card-body">-->
+<!--                                    <div class="d-flex">-->
+<!--                                        <div class="flex-shrink-0">-->
+<!--                                            <svg class="pc-icon text-primary">-->
+<!--                                                <use xlink:href="#custom-notification-outline"></use>-->
+<!--                                            </svg>-->
+<!--                                        </div>-->
+<!--                                        <div class="flex-grow-1 ms-3">-->
+<!--                                            <span class="float-end text-sm text-muted">2 dakika önce</span>-->
+<!--                                            <h5 class="text-body mb-2">Yeni Başvuru Kaydı</h5>-->
+<!--                                            <p class="mb-0"-->
+<!--                                            >Başvuru adı...</p-->
+<!--                                            >-->
+<!--                                        </div>-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                        </div>-->
+                    </div>
+                </li>
+                <li class="dropdown pc-h-item header-user-profile">
+                    <a
+                            class="pc-head-link dropdown-toggle arrow-none me-0"
+                            data-bs-toggle="dropdown"
+                            href="#"
+                            role="button"
+                            aria-haspopup="false"
+                            data-bs-auto-close="outside"
+                            aria-expanded="false"
+                    >
+                        <svg class="pc-icon">
+                            <use xlink:href="#custom-user"></use>
+                        </svg>
+                    </a>
+                    <div class="dropdown-menu dropdown-user-profile dropdown-menu-end pc-h-dropdown">
+                        <div class="dropdown-body">
+                            <div class="profile-notification-scroll position-relative" style="max-height: calc(100vh - 225px)">
+                                <div class="d-flex mb-1">
+                                    <div class="flex-shrink-0">
+                                        <svg class="pc-icon">
+                                            <use xlink:href="#custom-user"></use>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">YAVUZ MACUN</h6>
+                                    </div>
+                                </div>
+<!--                                <hr class="border-secondary border-opacity-50" />-->
+<!--                                <div class="card">-->
+<!--                                    <div class="card-body py-3">-->
+<!--                                        <div class="d-flex align-items-center justify-content-between">-->
+<!--                                            <h5 class="mb-0 d-inline-flex align-items-center"-->
+<!--                                            ><svg class="pc-icon text-muted me-2">-->
+<!--                                                    <use xlink:href="#custom-notification-outline"></use></svg-->
+<!--                                                >Notification</h5-->
+<!--                                            >-->
+<!--                                            <div class="form-check form-switch form-check-reverse m-0">-->
+<!--                                                <input class="form-check-input f-18" type="checkbox" role="switch" />-->
+<!--                                            </div>-->
+<!--                                        </div>-->
+<!--                                    </div>-->
+<!--                                </div>-->
+                                <hr class="border-secondary border-opacity-50" />
+                                <div class="d-grid mb-3">
+                                    <a href="#" id="logout2" class="btn btn-primary">
+                                        <svg class="pc-icon me-2">
+                                            <use xlink:href="#custom-logout-1-outline"></use></svg
+                                        >Oturumu Kapat
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</header>
+<!-- [ Header ] end --><!-- [ Main Content ] start -->
+<section class="pc-container">
+    <div class="pc-content">
+        <!-- [ breadcrumb ] start -->
+        <div class="page-header">
+            <div class="page-block">
+                <div class="row align-items-center">
+                    <div class="col-md-12">
+                        <ul class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="/panel/home"><svg class="pc-icon"><use xlink:href="#custom-home"></use></svg></a></li>
+                            <li class="breadcrumb-item"><a href="javascript: void(0)">Araştırma Uygulama İzinleri Başvuru ve Değerlendirme Sistemi</a></li>
+                            <li class="breadcrumb-item">Başvuru Detayı</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="page-header-title">
+                            <h3 class="mb-0">
+                                BAŞVURU DETAYI
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- [ breadcrumb ] end -->
+
+        <!-- [ Main Content ] start -->
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="card">
+                    <div class="card-header bg-secondary">
+                        <h5 class="text-white">Başvuru Bilgileri</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="mb-3">
+                                    <p class="ps-4"><span class="f-w-600">Başvuru Numarası:</span> <span class="badge bg-light-dark fw-bold f-14">MEB.TT.2026.045921.01</span></p>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-3">
+                                    <p class="ps-4"><span class="f-w-600">Başvuru Tarihi:</span> 09.02.2026</p>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-3">
+                                    <p class="ps-4"><span class="f-w-600">Başvuru Durumu:</span> <span class="badge bg-light-danger fw-bold f-14">Reddedildi</span></p>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-3">
+                                        <p class="ps-4"><span class="f-w-600">Aktif mi?:</span> <span class="badge bg-light-dark fw-bold f-14">Bu başvuru pasif durumdadır.</span></p>                                </div>
+                            </div>
+                            
+
+                            <div class="col-lg-12 mt-5">
+                                <div class="mb-3">
+                                    <h3>Kişisel Bilgiler</h3>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="mb-3">
+                                    <p class="ps-4"><span class="f-w-600">TC Kimlik No:</span> 50*******40</span></p>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="mb-3">
+                                    <p class="ps-4"><span class="f-w-600">Ad Soyad:</span> NERMİN ÜNAL</p>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="mb-3">
+                                    <p class="ps-4"><span class="f-w-600">Telefon:</span> 5543386616</span></p>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="mb-3">
+                                    <p class="ps-4"><span class="f-w-600">E-Posta:</span> nermiin89@hotmail.com</p>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="mb-3">
+                                    <p class="ps-4"><span class="f-w-600">Adres:</span> Bahçelievler Mah. 519. Sok. Bina No: 2/2 Daire:4 Ürgüp/Nevşehir</p>
+                                </div>
+                            </div>
+
+
+
+                            <div class="col-lg-12 mt-5">
+                                <div class="mb-3">
+                                    <h3>Başvuru Bilgileri</h3>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="mb-3">
+                                    <p class="ps-4"><span class="f-w-600">Başvuru Şekli:</span> Akademisyenler ve Öğrenciler</p>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="mb-3">
+                                    <p class="ps-4"><span class="f-w-600">Başvurunun Yapıldığı Ülke:</span> Türkiye</p>
+                                </div>
+                            </div>
+                                <div class="col-lg-6">
+        <div class="mb-3">
+            <p class="ps-4"><span class="f-w-600">Başvuran Unvanı:</span> Öğrenci</p>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="mb-3">
+            <p class="ps-4"><span class="f-w-600">Kademe:</span> Doktora</p>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="mb-3">
+            <p class="ps-4"><span class="f-w-600">Üniversite Adı:</span> ERCİYES ÜNİVERSİTESİ</p>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="mb-3">
+            <p class="ps-4"><span class="f-w-600">Fakülte / Enstitü / Yüksek Okul:</span> EĞİTİM BİLİMLERİ ENSTİTÜSÜ</p>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="mb-3">
+            <p class="ps-4"><span class="f-w-600">Bölüm / Anabilim Dalı:</span> EĞİTİM PROGRAMLARI VE ÖĞRETİM (DR)</p>
+        </div>
+    </div>
+
+
+                            <div class="col-lg-12 mt-5">
+                                <div class="mb-3">
+                                    <h3>Araştırma Bilgileri</h3>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="mb-3">
+                                    <p class="ps-4"><span class="f-w-600">Araştırmanın Adı:</span> Öğretmenlerin Yapay Zekâ Kullanım Eğilimlerinin ve Yapay Zekaya Pedagojik Uyumlarının İncelenmesi</p>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="mb-3">
+                                    <p class="ps-4"><span class="f-w-600">Bu Araştırmanın İçeriği Eğitim Teknolojileri ile Doğrudan İlgilidir:</span> <span class='badge bg-success'>Evet</span></p>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="mb-3">
+                                    <p class="ps-4"><span class="f-w-600">Araştırmanın Niteliği:</span> Doktora Tezi</p>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="mb-3">
+                                    <p class="ps-4"><span class="f-w-600">Bu Araştırma Öğrencilerin Doğrudan Akademik Başarılarını Ölçmeye Yöneliktir:</span> <span class='badge bg-danger'>Hayır</span></p>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="mb-3">
+                                    <p class="ps-4">
+                                        <span class="f-w-600">Araştırmanın Konusu ve İlişkili Konular:</span> <br>
+                                        <span class="d-block p-2">Teknoloji -> Yapay Zekâ<br></span>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="mb-3">
+                                    <p class="ps-4"><span class="f-w-600">Anahtar Kelimeler:</span> Yapay zekâ, Pedagojik uyum, Teknoloji eğilimleri, Eğitim teknolojileri</p>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="mb-3">
+                                    <p class="ps-4"><span class="f-w-600">Araştırmanın Yazım Dili:</span> Türkçe</p>
+                                </div>
+                            </div>
+
+
+
+                            <div class="col-lg-12 mt-5">
+                                <div class="mb-3">
+                                    <h3>Uygulama Bilgileri</h3>
+                                </div>
+                            </div>
+                            <div class="col-lg-12">
+                                <div class="mb-3">
+                                        <p class="ps-4"><span class="f-w-600">Uygulama Yapılacak İl Sayısı:</span> 1</p>                                                                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered" id="ozetUygulamaBilgileriTable">
+                                            <thead>
+                                            <tr>
+                                                <td class="bg-light fw-bold py-3">Çalışma Grubu</td>
+                                                <td class="bg-light fw-bold py-3">Teşkilat Türü</td>
+                                                <td class="bg-light fw-bold py-3">Uygulama Yapılacak MEB Teşkilatı</td>
+                                                <td class="bg-light fw-bold py-3" style="min-width: 70px;">Sayı <i class="ti ti-info-circle f-16" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="Talep Edilen Okul/Kurum Sayısı"></i></td>
+                                                <td class="bg-light fw-bold py-3">Özel Bilgiler</td>
+                                                <td class="bg-light fw-bold py-3">Uygulama Süresi</td>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            <tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, TALAS, Anadolu İmam Hatip Lisesi</td><td>2 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, TALAS, Anadolu Lisesi</td><td>4 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, TALAS, Spor Lisesi</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, TALAS, İlkokul</td><td>30 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, TALAS, Ortaokul</td><td>20 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, TALAS, Sosyal Bilimler Lisesi</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, DEVELİ, Anadolu Lisesi</td><td>3 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, DEVELİ, Fen Lisesi</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, DEVELİ, İmam Hatip Lisesi</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, DEVELİ, Anadolu İmam Hatip Lisesi</td><td>2 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, DEVELİ, İlkokul</td><td>47 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, DEVELİ, Ortaokul</td><td>24 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, DEVELİ, İmam Hatip Ortaokulu</td><td>5 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, DEVELİ, İlkokul (İşitme Engelliler)</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, DEVELİ, Ortaokul (İşitme Engelliler)</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, DEVELİ, Anadolu Meslek Programı</td><td>4 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, TALAS, İmam Hatip Ortaokulu</td><td>2 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, TALAS, Özel Eğitim Uygulama Okulu (I. Kademe)</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, TALAS, Özel Eğitim Uygulama Okulu (II. Kademe)</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, TALAS, Anadolu Meslek Programı</td><td>2 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, TALAS, Çok Programlı Anadolu Lisesi</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, İNCESU, Anadolu Lisesi</td><td>2 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, İNCESU, Anadolu İmam Hatip Lisesi</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, İNCESU, İlkokul</td><td>18 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, İNCESU, Ortaokul</td><td>11 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, İNCESU, İmam Hatip Ortaokulu</td><td>2 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, İNCESU, Anadolu Meslek Programı</td><td>2 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, YEŞİLHİSAR, Anadolu Lisesi</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, YEŞİLHİSAR, Fen Lisesi</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, YEŞİLHİSAR, İmam Hatip Lisesi</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, YEŞİLHİSAR, İlkokul</td><td>13 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, YEŞİLHİSAR, Ortaokul</td><td>5 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, YEŞİLHİSAR, İmam Hatip Ortaokulu</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, YEŞİLHİSAR, Anadolu Meslek Programı</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, MELİKGAZİ, Anadolu Lisesi</td><td>24 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, MELİKGAZİ, Fen Lisesi</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, MELİKGAZİ, İmam Hatip Lisesi</td><td>4 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, MELİKGAZİ, Anadolu İmam Hatip Lisesi</td><td>11 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, MELİKGAZİ, Sosyal Bilimler Lisesi</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, MELİKGAZİ, İlkokul</td><td>80 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, MELİKGAZİ, Ortaokul</td><td>55 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, MELİKGAZİ, İmam Hatip Ortaokulu</td><td>13 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, MELİKGAZİ, İlkokul (İşitme Engelliler)</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, MELİKGAZİ, Ortaokul (İşitme Engelliler)</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, MELİKGAZİ, Özel Eğitim Uygulama Okulu (I. Kademe)</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, MELİKGAZİ, Özel Eğitim Uygulama Okulu (II. Kademe)</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, MELİKGAZİ, Anadolu Meslek Programı</td><td>15 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, MELİKGAZİ, Anadolu Teknik Programı</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, MELİKGAZİ, Güzel Sanatlar Lisesi</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, KOCASİNAN, Anadolu Lisesi</td><td>12 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, KOCASİNAN, Fen Lisesi</td><td>2 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, KOCASİNAN, İmam Hatip Lisesi</td><td>2 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, KOCASİNAN, Anadolu İmam Hatip Lisesi</td><td>5 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, KOCASİNAN, İlkokul</td><td>73 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, KOCASİNAN, Ortaokul</td><td>44 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, KOCASİNAN, İmam Hatip Ortaokulu</td><td>22 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, KOCASİNAN, İlkokul (Görme Engelliler)</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, KOCASİNAN, Özel Eğitim Uygulama Okulu (I. Kademe)</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, KOCASİNAN, Özel Eğitim Uygulama Okulu (II. Kademe)</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, KOCASİNAN, Ortaokul (Görme Engelliler)</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, KOCASİNAN, Anadolu Meslek Programı</td><td>9 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, KOCASİNAN, Çok Programlı Anadolu Lisesi</td><td>2 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, HACILAR, Anadolu Lisesi</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, HACILAR, Anadolu İmam Hatip Lisesi</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, HACILAR, İlkokul</td><td>6 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, HACILAR, Ortaokul</td><td>3 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, HACILAR, İmam Hatip Ortaokulu</td><td>2 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr><tr><td class='text-wrap'>Öğretmen</td><td class='text-wrap'>Okul / Kurum</td><td class='text-wrap'>KAYSERİ, HACILAR, Çok Programlı Anadolu Lisesi</td><td>1 </td><td class='text-wrap'></td><td class='text-wrap'>Öğretmenlerin 1 defaya mahsus 30 dakikada ölçek sorularını cevaplamaları yeterlidir.</td></tr>                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <span class="small text-warning d-block">Araştırmacı başvuru aşamasında okul/kurum türünde uygulama kaydı girdiyse ve bu kayıtlar için çalışmak istediği okul seçimini yapsıysa <i class="ti ti-list-check text-secondary f-16"></i> butonu ile bunları görebilirsiniz.</span>
+                                </div>
+                            </div>
+
+
+
+                            <div class="col-lg-12 mt-5">
+                                <div class="mb-3">
+                                    <h3>Araştırmaya İlişkin Belgeler</h3>
+                                </div>
+                            </div>
+                                <div class="col-lg-12">
+        <div class="mb-3">
+            <p class="ps-4"><span class="f-w-600">Tez Önerisi:</span> <a href="/download/b2dkSXJHME00RnhHS3ljYS9kUTNJMUN5dDU4d3JHU3BsVEY1V2pVM28zR2dDNjNLeUs2b1BpRU1FUHJmQS9FWGpvMkpjeXlEQjc2RGdhVEErTmFqWUE9PQ==">Nermin Ünal - Tez Önerisi</a></p>
+        </div>
+    </div>    <div class="col-lg-12">
+        <div class="mb-3">
+            <p class="ps-4"><span class="f-w-600">Enstitü Yönetim Kurulu Kararı:</span> <a href="/download/b2dkSXJHME00RnhHS3ljYS9kUTNJMDh6a2RadDFEZzExZjJQcDlJM3V6VXVWU1dFcjZPbER0UXVwQ3Z6R0h1cFgrYnRpTzdXY0gzbnhkNFRJRVlTczZvZTlMZE5jWnVMRHNKNHdGUnNwOWM9">Nermin Ünal - Enstitü Yönetim Kurulu Kararı</a></p>
+        </div>
+    </div>                                <div class="col-lg-12">
+        <div class="mb-3">
+            <span class="ps-4"><span class="f-w-600">Veri Toplama Aracı / Araçları:</span></span><a href='/download/b2dkSXJHME00RnhHS3ljYS9kUTNJK0JyN21wQlF1NGN1K0svekI4aW4vM3VsUk5qS1Vvanp1TU91eTRXQk44UzJnc1lZMEpRbXVIaEFXMTRxZXNleWQzbGJqbTY2Smo3RkNvTTZIQ1RmSlByOXUvcHZpdmdkS3dkMkl1Z2w0c08=' class='btn btn-sm btn-light-secondary m-1'>Öğretmenlerin Yapay Zekâ Kullanım Eğilimleri Ölçeği ( Ölçek (Madde Havuzuna Dayalı Taslak Ölçek) )</a><a href='/download/b2dkSXJHME00RnhHS3ljYS9kUTNJMjh6ck1Oc2xEamVsMHJsUUxJS01nVXhXRldzVWNjb0ZNWEUzczVXVHRBVHBZaFdicHhnVjRqRk1kMzdTWkVNOTRGeGprK29OU2pPcFJQVGpNa25TbG82a3QvcFpkaThxa044cGxFeDdPSUE=' class='btn btn-sm btn-light-secondary m-1'>Öğretmenlerin Yapay Zekâya Pedagojik Uyumu Ölçeği ( Ölçek (Madde Havuzuna Dayalı Taslak Ölçek) )</a>        </div>
+    </div>                                <div class="col-lg-12">
+        <div class="mb-3">
+            <p class="ps-4"><span class="f-w-600">Araştırma Uygulama İzni Başvuru Taahhütnamesi:</span> <a href="/download/b2dkSXJHME00RnhHS3ljYS9kUTNJeFVrQzk5dVREU1pROVRXeFl5OERBUnNBR1FVa0N5NERVb2gweHRjU0NHUEZxRmZ6K1dTK0UvRzJKWVIxVWF1SkE9PQ==">Nermin Ünal - Araştırma Uygulama İzni Başvuru Taahhütnamesi</a></p>
+        </div>
+    </div>    <div class="col-lg-12">
+        <div class="mb-3">
+            <p class="ps-4"><span class="f-w-600">Araştırma/Tıbbi Araştırmalar İçin Etik Kuruldan Alınan Onay Belgesi:</span> <a href="/download/b2dkSXJHME00RnhHS3ljYS9kUTNJKzhyelRINlNmczBtL2xOMW1sWDhuSXEwSldIWkFIK3I5NW5NaDVVVXpPZQ==">Nermin Ünal - Etik Kuruldan Alınan Onay Belgesi</a></p>
+        </div>
+    </div>    <div class="col-lg-12">
+        <div class="mb-3">
+            <p class="ps-4"><span class="f-w-600">Ayrıntılı Bilgilendirme ve Gönüllü Katılım Formu:</span> <a href="/download/b2dkSXJHME00RnhHS3ljYS9kUTNJeHhNdnVLMEdUMmo2WktleGM2QkRNQ21JZS9LUVRmRnZPTkFpN25LcWlXVHJzdFd0S1BKMUdOVm9sS1M1RjJkWVI2cUxvNEpBYUxyQkxKRTdKbzVuV0hYN3AzQTJhQWNXMkxVbWNETnNHME8=">Nermin Ünal - Ayrıntılı Bilgilendirme ve Gönüllü Katılım Formu</a></p>
+        </div>
+    </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+                                    <div class="col-sm-12">
+                <div class="card">
+                    <div class="card-header bg-secondary">
+                        <h5 class="text-white">Ret Gerekçeleri</h5>
+                    </div>
+                    <div class="card-body py-0">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">
+        <div class="d-flex align-items-center">
+            <div class="flex-grow-1 ms-3">
+                <div class="row g-1">
+                    <div class="col">
+                        <h5 class="mb-1">“Millî Eğitim Bakanlığı Araştırma Uygulama İzni Başvuru Taahhütnamesi” imzalı hâli yüklenmemiştir.</h5>
+                        <p class='mb-0 text-muted'>Araştırma Uygulama İzni Başvuru Taahhütnamesi güncel değildir. Belgenin güncel haline Milli Eğitim Bakanlığı &quot;https://arastirmaizinleri.meb.gov.tr/evrak/milli_egitim_bakanligi_arastirma_uygulama_izni_basvuru_taahhutnamesi.docx&quot; adresinden ulaşabilirsiniz.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </li>    <li class="list-group-item">
+        <div class="d-flex align-items-center">
+            <div class="flex-grow-1 ms-3">
+                <div class="row g-1">
+                    <div class="col">
+                        <h5 class="mb-1">Araştırmanın örneklemi/çalışma grubu ekonomik, ulaşılabilir ve uygulanabilir değildir.</h5>
+                        <p class='mb-0 text-muted'>Araştırmanın örneklemi/çalışma grubu ekonomik, ulaşılabilir ve uygulanabilir değildir. Araştırmanın kapsamının, ekonomik ve uygulama koşulları dikkate alınarak daha ulaşılabilir bir örneklem/çalışma grubu ile sınırlandırılması uygun olacaktır.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </li>                        </ul>
+                    </div>
+                </div>
+            </div>
+                    </div>
+        <!-- [ Main Content ] end -->
+    </div>
+</section>
+<!-- [ Main Content ] end -->
+
+<footer class="pc-footer">
+    <div class="footer-wrapper container-fluid">
+        <div class="row">
+            <div class="col my-1">
+                <p class="m-0 text-center">Talim ve Terbiye Kurulu Başkanlığı</p>
+            </div>
+        </div>
+    </div>
+</footer> <!-- Required Js --><!-- Required Js -->
+<script src="/panel/assets/js/plugins/jquery-3.6.0.min.js"></script>
+<script src="/panel/assets/js/plugins/popper.min.js"></script>
+<script src="/panel/assets/js/plugins/simplebar.min.js"></script>
+<script src="/panel/assets/js/plugins/bootstrap.min.js"></script>
+<script src="/panel/assets/js/fonts/custom-font.js"></script>
+<script src="/panel/assets/js/pcoded.js"></script>
+<script src="/panel/assets/js/plugins/feather.min.js"></script>
+
+<!-- jquery-validation Js -->
+<!-- BU SCRİPT KALDIRILACAK. index.php de eklenecek -->
+<script src="/panel/assets/js/jquery.validate.min.js"></script>
+
+<script src="/panel/assets/js/sweetalert2/sweetalert2.js"></script>
+<script src="/panel/assets/js/sweetalert2/swal-component.js"></script>
+
+<script src="/panel/src/js/main/main.js?v=MTE1"></script>
+
+
+
+<script>layout_change('light');</script>
+<script>layout_theme_contrast_change('false');</script>
+<script>change_box_container('false');</script>
+<script>layout_caption_change('true');</script>
+<script>layout_rtl_change('false');</script>
+<script>preset_change("preset-1");</script>
+
+<script src="/panel/assets/js/jquery.printarea.js"></script><script src="/panel/assets/js/FileSaver.js"></script><script src="/panel/assets/js/jquery.wordexport.js"></script><script src="/panel/src/js/basvuru/basvuruDetay.js?v=MTE1"></script><!-- Modal Sm -->
+<div class="modal fade" id="modalSm" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalSmLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content" id="modalSm-content"></div>
+    </div>
+</div>
+
+<!-- Modal Lg -->
+<div class="modal fade" id="modalLg" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalLgLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="modalLg-content"></div>
+    </div>
+</div>
+
+<!-- Modal Lg -->
+<div class="modal fade" id="modalLgnonStatic" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalXlnoStaticLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" id="modalLgnonStatic-content"></div>
+    </div>
+</div>
+
+<!-- Modal Xl -->
+<div class="modal fade" id="modalXl" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalXlLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content" id="modalXl-content"></div>
+    </div>
+</div>
+
+<!-- Modal Xl -->
+<div class="modal fade" id="modalXlnoStatic" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modalXlnoStaticLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content" id="modalXlnoStatic-content"></div>
+    </div>
+</div></body>
+</html>

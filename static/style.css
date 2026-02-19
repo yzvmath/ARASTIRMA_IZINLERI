@@ -18,6 +18,7 @@
     --accent-green: #16a34a;
     --accent-orange: #ea580c;
     --accent-red: #dc2626;
+    --accent-teal: #0d9488;
     --accent-warning-readable: #9a6700;
     /* Koyu amber/altın rengi, okunabilirlik için */
     --radius-sm: 8px;
@@ -115,9 +116,14 @@ body {
 
 /* ─── Page Title ──────────────────────────────────────────────────────── */
 .page-title {
-    font-size: 1.75rem;
     font-weight: 700;
     color: var(--text-primary);
+}
+
+.page-subtitle {
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: var(--text-secondary);
 }
 
 /* ─── Stat Cards ──────────────────────────────────────────────────────── */
@@ -693,6 +699,24 @@ body {
 .badge-warning-dark {
     background-color: rgba(154, 103, 0, 0.15) !important;
     color: var(--accent-warning-readable) !important;
+}
+
+.text-orange {
+    color: var(--accent-orange) !important;
+}
+
+.bg-orange-subtle {
+    background-color: rgba(234, 88, 12, 0.1) !important;
+    border: 1px solid rgba(234, 88, 12, 0.2) !important;
+}
+
+.text-teal {
+    color: var(--accent-teal) !important;
+}
+
+.bg-teal-subtle {
+    background-color: rgba(13, 148, 136, 0.1) !important;
+    border: 1px solid rgba(13, 148, 136, 0.2) !important;
 }
 
 /* ─── Footer ──────────────────────────────────────────────────────────── */

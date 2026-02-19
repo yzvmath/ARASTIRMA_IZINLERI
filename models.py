@@ -69,6 +69,10 @@ class Basvuru(db.Model):
     olusturma_tarihi = db.Column(db.DateTime, default=datetime.utcnow)
     guncelleme_tarihi = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Yeni İş Akışı Alanları
+    secilen_okul = db.Column(db.String(200))  # Koordinatör seçimi
+    yonetici_notu = db.Column(db.Text)        # Yönetici red/onay notu
+
     # İlişkiler
     on_kontroller = db.relationship("OnKontrol", backref="basvuru", cascade="all, delete-orphan", lazy=True)
     kriterler = db.relationship("KriterDegerlendirme", backref="basvuru", cascade="all, delete-orphan", lazy=True)
@@ -184,3 +188,14 @@ class BasvuruDegerlendirici(db.Model):
     degerlendirici_adi = db.Column(db.String(200), nullable=False)
 
     __table_args__ = (db.UniqueConstraint("basvuru_id", "degerlendirici_adi", name="uq_basvuru_deg"),)
+
+class Degerlendirici(db.Model):
+    """Sistemdeki kayıtlı değerlendiriciler."""
+    __tablename__ = "degerlendirici"
+
+    id = db.Column(db.Integer, primary_key=True)
+    ad_soyad = db.Column(db.String(200), unique=True, nullable=False)
+    aktif = db.Column(db.Boolean, default=True)
+
+    def __repr__(self):
+        return f"<Degerlendirici {self.ad_soyad}>"
