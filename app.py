@@ -441,7 +441,8 @@ def _get_degerlendirici_stats():
         atamalar = BasvuruDegerlendirici.query.filter_by(degerlendirici_adi=d).all()
         gorevler = []
         bekliyor = devam = tamamlandi = 0
-        son_30_gun = 0
+        tamamlandi_30_gun = 0
+        toplam_30_gun = 0
         
         for atama in atamalar:
             b = Basvuru.query.get(atama.basvuru_id)
@@ -450,27 +451,34 @@ def _get_degerlendirici_stats():
             
             durum = b.degerlendirme_durumu or "bekliyor"
             
-            # Son 30 günde tamamlananlar (onay veya red)
-            if durum in ["onaylandi", "reddedildi"]:
-                if b.guncelleme_tarihi and b.guncelleme_tarihi >= thirty_days_ago:
-                    son_30_gun += 1
-                continue 
+            # Son 30 gün kontrolü (Herhangi bir aktivite: yeni başvuru veya güncelleme)
+            is_recent = False
+            if b.olusturma_tarihi and b.olusturma_tarihi >= thirty_days_ago:
+                is_recent = True
+            elif b.guncelleme_tarihi and b.guncelleme_tarihi >= thirty_days_ago:
+                is_recent = True
             
-            # Aktif görevler
-            if durum == "bekliyor":
-                bekliyor += 1
-            elif durum == "devam":
-                devam += 1
-            elif durum == "tamamlandi":
-                tamamlandi += 1
+            if is_recent:
+                toplam_30_gun += 1
+                if durum in ["onaylandi", "reddedildi"]:
+                    tamamlandi_30_gun += 1
             
-            gorevler.append({
-                "id": b.id,
-                "basvuru_no": b.basvuru_no,
-                "ad_soyad": b.ad_soyad,
-                "durum": durum,
-                "obj": b,
-            })
+            # Aktif görevleri listeye ekle (Sadece devam edenler)
+            if durum not in ["onaylandi", "reddedildi"]:
+                if durum == "bekliyor":
+                    bekliyor += 1
+                elif durum == "devam":
+                    devam += 1
+                elif durum == "tamamlandi":
+                    tamamlandi += 1
+                
+                gorevler.append({
+                    "id": b.id,
+                    "basvuru_no": b.basvuru_no,
+                    "ad_soyad": b.ad_soyad,
+                    "durum": durum,
+                    "obj": b,
+                })
             
         aktif_toplam = len(gorevler)
         stats = {
@@ -481,7 +489,8 @@ def _get_degerlendirici_stats():
             "devam": devam,
             "tamamlandi": tamamlandi,
             "gorevler": gorevler,
-            "son_30_gun": son_30_gun,
+            "son_30_gun": tamamlandi_30_gun, # Geriye dönük uyumluluk için tamamlanan
+            "toplam_30_gun": toplam_30_gun,
             "aktif": d_obj.aktif
         }
         deg_panel.append(stats)

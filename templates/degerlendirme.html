@@ -184,7 +184,7 @@
                             <span class="deg-name">{{ d }}</span>
                             <span
                                 class="deg-count badge bg-{{ 'danger' if is_yuku[d].toplam > 5 else 'warning' if is_yuku[d].toplam > 2 else 'success' }}-subtle text-{{ 'danger' if is_yuku[d].toplam > 5 else 'warning' if is_yuku[d].toplam > 2 else 'success' }}">
-                                {{ is_yuku[d].toplam }} Aktif | Tamamlanan: {{ is_yuku[d].son_30_gun }}
+                                30 Gün: {{ is_yuku[d].toplam_30_gun }}
                             </span>
                         </div>
                     </label>
