@@ -66,6 +66,9 @@ class Basvuru(db.Model):
 
     # Değerlendirme durumu
     degerlendirme_durumu = db.Column(db.String(20), default="bekliyor")  # bekliyor, devam, tamamlandi
+    yonetici_notu = db.Column(db.Text)
+    koordinator_karari = db.Column(db.String(20)) # ONAY, RED
+    koordinator_notu = db.Column(db.Text)
     olusturma_tarihi = db.Column(db.DateTime, default=datetime.utcnow)
     guncelleme_tarihi = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -186,6 +189,8 @@ class BasvuruDegerlendirici(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     basvuru_id = db.Column(db.Integer, db.ForeignKey("basvuru.id"), nullable=False)
     degerlendirici_adi = db.Column(db.String(200), nullable=False)
+    karar = db.Column(db.String(20))  # ONAY, RED, DUZELTME
+    aciklama = db.Column(db.Text)     # Değerlendirici notu
 
     __table_args__ = (db.UniqueConstraint("basvuru_id", "degerlendirici_adi", name="uq_basvuru_deg"),)
 

@@ -1,23 +1,10 @@
-import sqlite3
+from app import app, db
+from models import Basvuru, BasvuruDegerlendirici
 
-def check_pending_school_selection():
-    conn = sqlite3.connect("degerlendirme.db")
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    
-    print("Checking for ANY application in 'okul_secimi' state...")
-    c.execute("SELECT id, basvuru_no, degerlendirme_durumu, yonetici_notu, secilen_okul FROM basvuru WHERE degerlendirme_durumu='okul_secimi'")
-    rows = c.fetchall()
-    
-    if rows:
-        for row in rows:
-            print(f"--- Application {row['basvuru_no']} (ID: {row['id']}) ---")
-            print(f"Durum: {row['degerlendirme_durumu']}")
-            print(f"Secilen Okul: {row['secilen_okul']}")
-    else:
-        print("No applications found in 'okul_secimi' state.")
-        
-    conn.close()
-
-if __name__ == "__main__":
-    check_pending_school_selection()
+with app.app_context():
+    basvurular = Basvuru.query.all()
+    print(f"{'ID':<5} {'No':<20} {'Durum':<15} {'MEBBIS State':<25} {'Deg Sayisi':<10}")
+    print("-" * 80)
+    for b in basvurular:
+        deg_sayisi = BasvuruDegerlendirici.query.filter_by(basvuru_id=b.id).count()
+        print(f"{b.id:<5} {b.basvuru_no:<20} {str(b.degerlendirme_durumu):<15} {str(b.basvuru_durumu):<25} {deg_sayisi:<10}")

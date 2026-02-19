@@ -174,6 +174,27 @@
         </div>
         <div class="card-body">
             <div class="row g-3">
+                <style>
+                    .deg-karar-wrapper {
+                        display: none !important;
+                        transition: all 0.3s ease;
+                    }
+
+                    .deg-card--selected .deg-karar-wrapper {
+                        display: block !important;
+                        animation: fadeIn 0.3s;
+                    }
+
+                    @keyframes fadeIn {
+                        from {
+                            opacity: 0;
+                        }
+
+                        to {
+                            opacity: 1;
+                        }
+                    }
+                </style>
                 {% for d in degerlendiriciler %}
                 <div class="col-md-6 col-lg-3">
                     <label class="deg-card {{ 'deg-card--selected' if d in atanmis_degerlendiriciler }}">
@@ -186,6 +207,23 @@
                                 class="deg-count badge bg-{{ 'danger' if is_yuku[d].toplam > 5 else 'warning' if is_yuku[d].toplam > 2 else 'success' }}-subtle text-{{ 'danger' if is_yuku[d].toplam > 5 else 'warning' if is_yuku[d].toplam > 2 else 'success' }}">
                                 30 Gün: {{ is_yuku[d].toplam_30_gun }}
                             </span>
+
+                            <!-- Karar Seçimi (Sadece seçiliyse JS ile gösterilecek veya her zaman gösterip CSS ile) -->
+                            <div class="mt-2 text-center deg-karar-wrapper" onclick="event.preventDefault()">
+                                <select name="deg_karar_{{ d }}" class="form-select form-select-sm deg-karar-select"
+                                    style="font-size: 0.8rem;">
+                                    <option value="" {% if d not in atanmis_degerlendiriciler %}selected{% endif %}>
+                                        Karar Seçiniz...</option>
+                                    <option value="ONAY" {% if d in atanmis_degerlendiriciler and
+                                        basvuru.degerlendiriciler|selectattr('degerlendirici_adi', 'equalto' ,
+                                        d)|map(attribute='karar' )|first=='ONAY' %}selected{% endif %}>✅ Onayladı
+                                    </option>
+                                    <option value="RED" {% if d in atanmis_degerlendiriciler and
+                                        basvuru.degerlendiriciler|selectattr('degerlendirici_adi', 'equalto' ,
+                                        d)|map(attribute='karar' )|first=='RED' %}selected{% endif %}>❌ Reddetti
+                                    </option>
+                                </select>
+                            </div>
                         </div>
                     </label>
                 </div>
@@ -362,43 +400,82 @@
     <!-- BÖLÜM 6: YÖNETİCİ & KOORDİNATÖR İŞLEMLERİ (Duruma Göre)          -->
     <!-- ═══════════════════════════════════════════════════════════════════ -->
 
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- BÖLÜM 6: KOORDİNATÖR DEĞERLENDİRMESİ & İŞLEM                       -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+
     <!-- STANDART DEĞERLENDİRME BUTONLARI (Sadece diğer durumlar hariçse) -->
     {% if basvuru.degerlendirme_durumu != 'yonetici_onayinda' and basvuru.degerlendirme_durumu != 'okul_secimi' %}
-    <div class="d-flex justify-content-between align-items-center mb-5 no-print p-3 bg-white rounded shadow-sm border">
-        <button type="button" class="btn btn-outline-secondary btn-lg px-4" onclick="window.print()">
-            <i class="bi bi-printer me-2"></i>Yazdır
-        </button>
 
-        <div class="d-flex gap-3">
-            <button type="submit" class="btn btn-danger btn-lg px-4"
-                onclick="document.getElementById('formAction').value='reddet'; return confirm('Başvuruyu REDDETMEK istediğinizden emin misiniz?')">
-                <i class="bi bi-x-circle me-2"></i>BAŞVURUYU REDDET
-            </button>
-            <button type="submit" class="btn btn-success btn-lg px-4"
-                onclick="document.getElementById('formAction').value='onayla'; return confirm('Başvuruyu YÖNETİCİ ONAYINA göndermek istediğinizden emin misiniz?')">
-                <i class="bi bi-send me-2"></i>YÖNETİCİYE GÖNDER
-            </button>
+    <div class="card glass-card mb-5 border-info">
+        <div class="card-header bg-info-subtle text-info-emphasis">
+            <h5 class="mb-0"><i class="bi bi-person-check-fill me-2"></i>Koordinatör Değerlendirmesi</h5>
         </div>
-    </div>
-    {% endif %}
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-12">
+                    <label class="form-label fw-bold">Kararınız:</label>
+                    <div class="d-flex gap-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="koordinator_karari" id="kararOnay"
+                                value="ONAY" {{ 'checked' if basvuru.koordinator_karari=='ONAY' }}>
+                            <label class="form-check-label text-success fw-bold" for="kararOnay">
+                                <i class="bi bi-check-circle-fill me-1"></i>Onay (Yöneticiye Arz)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="koordinator_karari" id="kararRed"
+                                value="RED" {{ 'checked' if basvuru.koordinator_karari=='RED' }}>
+                            <label class="form-check-label text-danger fw-bold" for="kararRed">
+                                <i class="bi bi-x-circle-fill me-1"></i>Red (Yöneticiye Arz)
+                            </label>
+                        </div>
+                    </div>
+                </div>
 
-    <!-- Print Footer (Visible only when printing) -->
-    <div class="print-footer d-none">
-        <div class="sig-box">
-            <p><strong>Değerlendirici 1</strong></p>
-            <p>{{ basvuru.degerlendiriciler[0].degerlendirici_adi if basvuru.degerlendiriciler|length > 0 else
-                '........................' }}</p>
-            <br><br>
-            <p>İmza</p>
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Koordinatör Notu (Opsiyonel):</label>
+                    <textarea name="koordinator_notu" class="form-control" rows="2"
+                        placeholder="Yöneticiye iletmek istediğiniz notlar...">{{ basvuru.koordinator_notu or '' }}</textarea>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary btn-lg px-4 me-2"
+                            onclick="window.print()">
+                            <i class="bi bi-printer me-2"></i>Yazdır
+                        </button>
+                        <button type="submit" class="btn btn-secondary btn-lg px-4" name="action" value="kaydet">
+                            <i class="bi bi-save me-2"></i>Taslak Kaydet
+                        </button>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg px-5"
+                        onclick="document.getElementById('formAction').value='yoneticiye_gonder'; return confirm('Başvuruyu seçilen kararla YÖNETİCİ ONAYINA göndermek istediğinizden emin misiniz?')">
+                        <i class="bi bi-send-check me-2"></i>KAYDET VE YÖNETİCİYE GÖNDER
+                    </button>
+                </div>
+            </div>
         </div>
-        <div class="sig-box">
-            <p><strong>Değerlendirici 2</strong></p>
-            <p>{{ basvuru.degerlendiriciler[1].degerlendirici_adi if basvuru.degerlendiriciler|length > 1 else
-                '........................' }}</p>
-            <br><br>
-            <p>İmza</p>
+        {% endif %}
+
+        <!-- Print Footer (Visible only when printing) -->
+        <div class="print-footer d-none">
+            <div class="sig-box">
+                <p><strong>Değerlendirici 1</strong></p>
+                <p>{{ basvuru.degerlendiriciler[0].degerlendirici_adi if basvuru.degerlendiriciler|length > 0 else
+                    '........................' }}</p>
+                <br><br>
+                <p>İmza</p>
+            </div>
+            <div class="sig-box">
+                <p><strong>Değerlendirici 2</strong></p>
+                <p>{{ basvuru.degerlendiriciler[1].degerlendirici_adi if basvuru.degerlendiriciler|length > 1 else
+                    '........................' }}</p>
+                <br><br>
+                <p>İmza</p>
+            </div>
         </div>
-    </div>
 </form>
 
 <!-- YÖNETİCİ & KOORDİNATÖR İŞLEMLERİ (Form Dışı - Burada) -->
@@ -524,6 +601,18 @@
                 return;
             }
             this.closest('.deg-card').classList.toggle('deg-card--selected', this.checked);
+        });
+    });
+
+    // Prevent select click from toggling checkbox
+    document.querySelectorAll('.deg-karar-select').forEach(select => {
+        select.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation(); // Stop bubbling to label
+        });
+        // Also need to handle mousedown to prevent radio/checkbox behavior on label
+        select.addEventListener('mousedown', function (e) {
+            e.stopPropagation();
         });
     });
 

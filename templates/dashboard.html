@@ -216,8 +216,16 @@
                             <div class="d-flex flex-column gap-1 align-items-start">
                                 {% if b.degerlendiriciler %}
                                 {% for bd in b.degerlendiriciler %}
-                                <span class="badge bg-primary-subtle text-primary w-100 text-start text-wrap"
-                                    style="white-space: normal; line-height: 1.2;">{{ bd.degerlendirici_adi }}</span>
+                                <div class="d-flex align-items-center gap-1 mb-1">
+                                    <span class="badge bg-primary-subtle text-primary text-start text-wrap flex-grow-1"
+                                        style="white-space: normal; line-height: 1.2;">{{ bd.degerlendirici_adi
+                                        }}</span>
+                                    {% if bd.karar == 'ONAY' %}
+                                    <i class="bi bi-check-circle-fill text-success" title="Onayladı"></i>
+                                    {% elif bd.karar == 'RED' %}
+                                    <i class="bi bi-x-circle-fill text-danger" title="Reddetti"></i>
+                                    {% endif %}
+                                </div>
                                 {% endfor %}
                                 {% else %}
                                 <span class="text-muted small">-</span>

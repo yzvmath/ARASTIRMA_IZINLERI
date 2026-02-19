@@ -209,8 +209,11 @@ def mebbis_json_yukle(json_path):
         # Mevcut kaydı kontrol et (GÜVENLİK: Mevcut başvuruları atla, üzerine yazma)
         mevcut = Basvuru.query.filter_by(basvuru_no=basvuru_no).first()
         if mevcut:
-            atlanan += 1
-            continue
+            # Düzenleme modunda, mevcut kayıt güncellenecek
+            pass
+        else:
+            # Yeni kayıt
+            pass
         
         # Veri setini hazırla
         yeni_veri = {
@@ -234,7 +237,7 @@ def mebbis_json_yukle(json_path):
             "yazim_dili": _get_val_robust(kayit, "Araştırmanın Yazım Dili"),
             "il_sayisi": _get_val_robust(kayit, "Uygulama Yapılacak İl Sayısı"),
             "calisma_grubu": _get_val_robust(kayit, "Çalışma Grubu"),
-            "teskilat_turu": _tekil_pipe(_get_val_robust(kayit, "Teşkilat Türü", "UYGULAMA YAPILACAK KURUM TÜRÜ")),
+            "teskilat_turu": _tekil_pipe(_get_val_robust(kayit, "Teşkilat Türü", ["UYGULAMA YAPILACAK KURUM TÜRÜ", "KURUM TÜRÜ", "KURUM TIPI", "TEŞKİLAT TÜRÜ", "KURUM"])),
             "meb_teskilati": _get_val_robust(kayit, "Uygulama Yapılacak MEB Teşkilatı"),
             "okul_kurum_sayisi": _get_val_robust(kayit, "Uygulama Okul/Kurum Sayısı"),
             "ozel_bilgiler": _get_val_robust(kayit, "Özel Bilgiler"),
@@ -358,18 +361,64 @@ def mebbis_json_yukle(json_path):
         # 6. Verileri Uygula (Metin Alanları)
         is_changed = False
         
-        # MEBBIS Durumunu İç Duruma Eşle
+        # MEBBIS Durumunu ve Kurum İşlemini İç Duruma Eşle
         mebbis_durum = yeni_veri.get("basvuru_durumu", "").upper()
-        if "TAMAMLANDI" in mebbis_durum or "TAMAMLAND" in mebbis_durum:
-             yeni_veri["degerlendirme_durumu"] = "tamamlandi"
-        elif "ONAY" in mebbis_durum:
-            yeni_veri["degerlendirme_durumu"] = "devam"
+        
+        # Tablo verilerinden Kurumun Son İşlemini bul
+        tablo = kayit.get("tablo_verileri", {})
+        kurum_islem = ""
+        # Key'lerde farklı varyasyonlar olabilir (\n veya boşluklu)
+        for k, v in tablo.items():
+            if "KURUMUN" in k.upper() and "SON" in k.upper():
+                kurum_islem = str(v).upper()
+                break
+        
+        # Varsayılan Durum Belirleme
+        yeni_durum = "bekliyor"
+        
+        # 1. Yeni Kayıt -> Bekliyor (Ön Kontrol)
+        if "YENİ KAYIT" in mebbis_durum or "YENI KAYIT" in mebbis_durum:
+            yeni_durum = "bekliyor"
+
+        # 2. Tamamlandı -> Ön Kontrol Bitti
+        elif "TAMAMLANDI" in mebbis_durum or "TAMAMLAND" in mebbis_durum:
+            yeni_durum = "tamamlandi" # Bu "Ön Kontrol Tamamlandı" demek (Değerlendirici atanacak)
+            
+            # Eğer son işlem Yönetici Onay Kararı ise durum ileri taşınmalı
+            if "YÖNETİCİ" in kurum_islem or "YONETICI" in kurum_islem:
+                yeni_durum = "okul_secimi" # Yönetici kararı verilmiş -> Okul seçimi
+                
+        # 3. Onay Bekliyor -> Değerlendirme / Yönetici
+        elif "ONAY" in mebbis_durum: # "Onay Bekliyor" vb.
+             # Onay bekliyor ama kimin onayını?
+             if "YÖNETİCİ" in kurum_islem or "YONETICI" in kurum_islem:
+                 yeni_durum = "okul_secimi" # Yönetici kararı verilmiş -> Okul seçimi (USER: Yönetici onayından geçti diyor)
+             elif "DEĞERLENDİRİCİ" in kurum_islem or "DEERLENDIRICI" in kurum_islem:
+                 yeni_durum = "yonetici_onayinda" # Değerlendirici kararı vermiş -> Yönetici onayı bekliyor
+             else:
+                 yeni_durum = "tamamlandi" # Değerlendirici/Komisyon onayı bekliyor -> Değerlendirme aşaması
+                 
         elif "TAMAM" in mebbis_durum or "SONUÇ" in mebbis_durum or "KABUL" in mebbis_durum:
-            yeni_veri["degerlendirme_durumu"] = "tamamlandi"
-        else:
-            # Only reset to 'bekliyor' if it's currently in a pre-check state
-            # This prevents overwriting advanced states if MEBBIS status is ambiguous
-             yeni_veri["degerlendirme_durumu"] = "bekliyor"
+             yeni_durum = "tamamlandi"
+
+        # MEVCUT DURUMU KORUMA (Local State Protection)
+        # Eğer mevcut durum daha ileri bir aşamadaysa (Okul Seçimi, Onaylandı, Reddedildi), 
+        # MEBBIS'ten gelen "Onay Bekliyor" gibi genel durumlar bunu ezmemeli.
+        mevcut_durum = getattr(target_obj, "degerlendirme_durumu", "")
+        advanced_states = ["yonetici_onayinda", "okul_secimi", "onaylandi", "reddedildi"]
+        
+        should_update_status = True
+        
+        if mevcut_durum in advanced_states:
+            # Eğer yeni durum sadece "tamamlandi" veya "bekliyor" ise ve biz ileri aşamadaysak duruma dokunma
+            if yeni_durum in ["tamamlandi", "bekliyor", "devam"]:
+                should_update_status = False
+            # Yönetici olayında da, eğer zaten Okul Seçimindeysek geri dönmesin
+            if yeni_durum == "yonetici_onayinda" and mevcut_durum in ["okul_secimi", "onaylandi", "reddedildi"]:
+                should_update_status = False
+
+        if should_update_status:
+            yeni_veri["degerlendirme_durumu"] = yeni_durum
 
         for db_field, val in yeni_veri.items():
             old_val = getattr(target_obj, db_field, "") or ""
@@ -634,10 +683,25 @@ def degerlendirme_kaydet(id):
 
     # Değerlendiricileri kaydet (checkbox'lardan)
     secilen = request.form.getlist("degerlendiriciler")
+    
+    # Mevcut değerlendiricileri al (kararlarını korumak için)
+    mevcut_degerlendiriciler = {bd.degerlendirici_adi: bd for bd in BasvuruDegerlendirici.query.filter_by(basvuru_id=id).all()}
+    
     # Mevcut atamaları temizle
     BasvuruDegerlendirici.query.filter_by(basvuru_id=id).delete()
+    
     for deg_adi in secilen[:2]:  # En fazla 2
+        # Yeni nesne oluştur
         bd = BasvuruDegerlendirici(basvuru_id=id, degerlendirici_adi=deg_adi)
+        
+        # Formdan gelen kararı al (eğer varsa)
+        karar = request.form.get(f"deg_karar_{deg_adi}")
+        if karar:
+            bd.karar = karar
+        elif deg_adi in mevcut_degerlendiriciler:
+            # Formda yoksa ama eskiden varsa koru (eğer istenirse, ama form her zaman gönderir)
+            bd.karar = mevcut_degerlendiriciler[deg_adi].karar
+            
         db.session.add(bd)
 
     # Ön kontrolleri kaydet
@@ -670,15 +734,22 @@ def degerlendirme_kaydet(id):
     
     # Buton aksiyonuna göre son durumu belirle
     action = request.form.get("action")
-    if action == "onayla":
+    
+    # Koordinatör verilerini her durumda güncelleyelim (varsa)
+    k_karar = request.form.get("koordinator_karari")
+    k_notu = request.form.get("koordinator_notu")
+    if k_karar:
+        basvuru.koordinator_karari = k_karar
+    if k_notu is not None:
+        basvuru.koordinator_notu = k_notu
+
+    if action == "yoneticiye_gonder":
+        # Karar ne olursa olsun yöneticiye gider
         basvuru.degerlendirme_durumu = "yonetici_onayinda"
         db.session.commit()
-        flash(f"Başvuru ({basvuru.basvuru_no}) yönetici onayına gönderildi.", "success")
-        return redirect(url_for("dashboard"))
-    elif action == "reddet":
-        basvuru.degerlendirme_durumu = "reddedildi"
-        db.session.commit()
-        flash(f"Başvuru ({basvuru.basvuru_no}) REDDEDİLDİ ve Tamamlanan İşlemler'e taşındı.", "danger")
+        
+        karar_text = "ONAY" if basvuru.koordinator_karari == "ONAY" else "RED"
+        flash(f"Başvuru ({basvuru.basvuru_no}) {karar_text} görüşüyle yönetici onayına gönderildi.", "success")
         return redirect(url_for("dashboard"))
     else:
         # Standart Kaydet
@@ -991,14 +1062,40 @@ def durum_metin_filter(durum):
 def kompleks_durum_metni_filter(b):
     durum = b.degerlendirme_durumu
     
-    # 1. Ön Kontrol (Bekliyor / Devam) -> "Ön Kontrol devam ediyor"
+    # 1. Ön Kontrol (Bekliyor / Devam)
     if durum in ['bekliyor', 'devam']:
-        return "Ön Kontrol devam ediyor"
-        
+        # Eğer değerlendirici atanmışsa, ön kontrol bitmiştir
+        if b.degerlendiriciler:
+            return "Değerlendirici İncelemesinde"
+
+        # Ön kontrol maddelerinin hepsi tamamlanmış mı?
+        tamamlanan_sayisi = OnKontrol.query.filter(
+            OnKontrol.basvuru_id == b.id,
+            OnKontrol.durum != None,
+            OnKontrol.durum != ""
+        ).count()
+        gerekli_sayi = len(ON_KONTROL_MADDELERI)
+
+        if tamamlanan_sayisi < gerekli_sayi:
+            return f"Ön Kontrol devam ediyor ({tamamlanan_sayisi}/{gerekli_sayi})"
+        else:
+            return "Ön Kontrol Tamamlandı (Değerlendirici Atama)"
+
     # 2. Ön Kontrol Tamamlandı (Değerlendirici YOKSA)
     if durum == 'tamamlandi' and not b.degerlendiriciler:
-        return "Ön Kontrol tamamlandı"
+        # Ön kontrol maddelerinin hepsi tamamlanmış mı?
+        tamamlanan_sayisi = OnKontrol.query.filter(
+            OnKontrol.basvuru_id == b.id,
+            OnKontrol.durum != None,
+            OnKontrol.durum != ""
+        ).count()
+        gerekli_sayi = len(ON_KONTROL_MADDELERI)
         
+        if tamamlanan_sayisi < gerekli_sayi:
+            return f"Ön Kontrol devam ediyor ({tamamlanan_sayisi}/{gerekli_sayi})"
+            
+        return "Ön Kontrol Tamamlandı (Değerlendirici Atama)"
+            
     # 3. Değerlendiriciler İnceliyor (Tamamlandı + Değerlendirici VAR)
     # Not: 'yonetici_onayinda' veya sonrası zaten ayrı durumlar
     if durum == 'tamamlandi' and b.degerlendiriciler:
