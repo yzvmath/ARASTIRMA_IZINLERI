@@ -241,8 +241,29 @@ def mebbis_json_yukle(json_path):
             "meb_teskilati": _get_val_robust(kayit, "Uygulama Yapılacak MEB Teşkilatı"),
             "okul_kurum_sayisi": _get_val_robust(kayit, "Uygulama Okul/Kurum Sayısı"),
             "ozel_bilgiler": _get_val_robust(kayit, "Özel Bilgiler"),
-            "uygulama_suresi": _get_val_robust(kayit, "Uygulama Süresi", "SÜRE"),
+            "uygulama_suresi": "", # Başlangıçta boş bırak, aşağıda tablodan çekilecek
         }
+
+        # --- Uygulama Süresi İçin Kesin Ayıklama (Tablo Odaklı) ---
+        uyg_tablo = detay.get("Uygulama Bilgileri", [])
+        durations = []
+        if uyg_tablo and isinstance(uyg_tablo, list):
+            for row in uyg_tablo:
+                if isinstance(row, list) and len(row) >= 6:
+                    # 6. sütun (Uygulama Süresi) - Örn: "15 Ders Saati"
+                    duration = str(row[5]).strip()
+                    # Case-insensitive arama yap (dk, dakika, ders, saat, oturum)
+                    match_keywords = ["ders", "saat", "dakika", " oturum", " dk"]
+                    if duration and duration not in durations and any(k in duration.lower() for k in match_keywords):
+                        durations.append(duration)
+        
+        if durations:
+            yeni_veri["uygulama_suresi"] = ", ".join(durations)
+        else:
+            # Tablodan bulunamadıysa fallback (Sadece "Ders Saati" veya "Dakika" içeriyorsa güven)
+            fallback_val = _get_val_robust(kayit, "Uygulama Süresi")
+            if any(k in fallback_val for k in ["Ders", "Dakika", "Saat"]):
+                yeni_veri["uygulama_suresi"] = fallback_val
 
         # ───────────────────────────────────────────────────────────────────────────
         # BELGE AYRIŞTIRMA VE EŞLEŞTİRME (Refactored)
@@ -274,7 +295,7 @@ def mebbis_json_yukle(json_path):
                                 
                                 # Eğer temizleme sonucu boş kaldıysa (veya ayırıcı yoksa) orijinali koru
                                 if not clean_text:
-                                    clean_text = text
+                                    clean_text = _text
                                 
                                 # Uzantı temizliği (örn: .pdf, .docx sil)
                                 base_text = str(clean_text)
@@ -422,9 +443,16 @@ def mebbis_json_yukle(json_path):
 
         for db_field, val in yeni_veri.items():
             old_val = getattr(target_obj, db_field, "") or ""
+            
+            # Normal güncelleme: Yeni değer varsa ve eskisinden farklıysa
             if val and str(val) != str(old_val):
                 setattr(target_obj, db_field, val)
                 is_changed = True
+            # ÖZEL DURUM: uygulama_suresi temizleme (Eğer eskisi yanlış bir değerlendirme süresiyse)
+            elif db_field == "uygulama_suresi" and not val and old_val:
+                if "gün" in old_val.lower() or "2026" in old_val:
+                    setattr(target_obj, db_field, "")
+                    is_changed = True
 
         # 7. Belgeleri Uygula (JSON String)
         def liste_to_json(liste):
@@ -540,7 +568,8 @@ def _get_degerlendirici_stats():
             "gorevler": gorevler,
             "son_30_gun": tamamlandi_30_gun, # Geriye dönük uyumluluk için tamamlanan
             "toplam_30_gun": toplam_30_gun,
-            "aktif": d_obj.aktif
+            "aktif": d_obj.aktif,
+            "rol": d_obj.rol
         }
         deg_panel.append(stats)
         is_yuku[d] = stats
@@ -661,7 +690,12 @@ def degerlendirme(id):
     _, is_yuku = _get_degerlendirici_stats()
 
     # Sadece AKTİF değerlendiricileri seçim listesine gönder
-    degerlendiriciler_list = [d.ad_soyad for d in Degerlendirici.query.filter_by(aktif=True).all()]
+    # Yalnızca rolü 'degerlendirici' olan aktif kişileri getir
+    degerlendiriciler_list = [d.ad_soyad for d in Degerlendirici.query.filter_by(aktif=True, rol='degerlendirici').all()]
+    
+    # Koordinatör ve Yöneticileri getir (Yazdırma/İmza alanı için)
+    koordinatorler = Degerlendirici.query.filter_by(aktif=True, rol='koordinator').all()
+    yoneticiler = Degerlendirici.query.filter_by(aktif=True, rol='yonetici').all()
 
     return render_template(
         "degerlendirme.html",
@@ -673,6 +707,8 @@ def degerlendirme(id):
         on_kontrol_maddeleri=ON_KONTROL_MADDELERI,
         atanmis_degerlendiriciler=atanmis,
         is_yuku=is_yuku,
+        koordinatorler=koordinatorler,
+        yoneticiler=yoneticiler,
     )
 
 
@@ -894,11 +930,12 @@ def degerlendiriciler():
 @app.route("/degerlendiriciler/ekle", methods=["POST"])
 def degerlendirici_ekle():
     ad = request.form.get("ad_soyad", "").strip().upper()
+    rol = request.form.get("rol", "degerlendirici")
     if ad:
         if Degerlendirici.query.filter_by(ad_soyad=ad).first():
             flash(f"{ad} zaten kayıtlı.", "warning")
         else:
-            db.session.add(Degerlendirici(ad_soyad=ad, aktif=True))
+            db.session.add(Degerlendirici(ad_soyad=ad, aktif=True, rol=rol))
             db.session.commit()
             flash(f"{ad} eklendi.", "success")
     return redirect(url_for("degerlendiriciler"))
@@ -908,16 +945,19 @@ def degerlendirici_duzenle(id):
     d = Degerlendirici.query.get_or_404(id)
     yeni_ad = request.form.get("ad_soyad", "").strip().upper()
     eski_ad = d.ad_soyad
+    yeni_rol = request.form.get("rol", d.rol)
     
-    if yeni_ad and yeni_ad != eski_ad:
-        # Mevcut atamalardaki isimleri de güncelle (tutarlılık için)
-        atamalar = BasvuruDegerlendirici.query.filter_by(degerlendirici_adi=eski_ad).all()
-        for atama in atamalar:
-            atama.degerlendirici_adi = yeni_ad
+    if yeni_ad:
+        if yeni_ad != eski_ad:
+            # Mevcut atamalardaki isimleri de güncelle (tutarlılık için)
+            atamalar = BasvuruDegerlendirici.query.filter_by(degerlendirici_adi=eski_ad).all()
+            for atama in atamalar:
+                atama.degerlendirici_adi = yeni_ad
+            d.ad_soyad = yeni_ad
         
-        d.ad_soyad = yeni_ad
+        d.rol = yeni_rol
         db.session.commit()
-        flash("Değerlendirici ismi güncellendi.", "success")
+        flash("Personel bilgileri güncellendi.", "success")
     
     return redirect(url_for("degerlendiriciler"))
 

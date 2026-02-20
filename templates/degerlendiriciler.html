@@ -12,15 +12,24 @@
     </button>
 </div>
 
-<div class="row g-4">
+{% set roller = [
+{'kodu': 'degerlendirici', 'ad': 'DEĞERLENDİRİCİLER', 'ikon': 'bi-people-fill'},
+{'kodu': 'koordinator', 'ad': 'KOORDİNATÖRLER', 'ikon': 'bi-person-badge-fill'},
+{'kodu': 'yonetici', 'ad': 'YÖNETİCİLER', 'ikon': 'bi-person-workspace'}
+] %}
+
+{% for r in roller %}
+<div class="row g-4 mb-4">
     <div class="col-12">
+        <h4 class="mb-2 text-primary" style="font-weight: 600;"><i class="bi {{ r.ikon }} me-2"></i>{{ r.ad }}</h4>
         <div class="card glass-card">
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light">
                             <tr>
-                                <th class="ps-4">Değerlendirici Adı</th>
+                                <th class="ps-4">Personel Adı</th>
+                                <!-- <th class="text-center">Rol</th> -->
                                 <th class="text-center">Durum</th>
                                 <th class="text-center">Aktif İş Yükü</th>
                                 <th class="text-center">Son 30 Gün (Toplam)</th>
@@ -28,7 +37,10 @@
                             </tr>
                         </thead>
                         <tbody>
+                            {% set ns = namespace(found=false) %}
                             {% for d in deg_list %}
+                            {% if d.rol == r.kodu %}
+                            {% set ns.found = true %}
                             <tr>
                                 <td class="ps-4">
                                     <div class="d-flex align-items-center">
@@ -42,6 +54,9 @@
                                         </div>
                                     </div>
                                 </td>
+                                <!-- <td class="text-center">
+                                    <span class="badge bg-primary-subtle text-primary">{{ d.rol | capitalize }}</span>
+                                </td> -->
                                 <td class="text-center">
                                     {% if d.aktif %}
                                     <span class="badge bg-success-subtle text-success">Aktif</span>
@@ -62,8 +77,8 @@
                                 </td>
                                 <td class="text-end pe-4">
                                     <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-primary" title="İsim Düzenle"
-                                            onclick="editDegerlendirici('{{ d.ad_soyad_obj.id if d.ad_soyad_obj else '' }}', '{{ d.ad }}')">
+                                        <button class="btn btn-outline-primary" title="Düzenle"
+                                            onclick="editDegerlendirici('{{ d.ad_soyad_obj.id if d.ad_soyad_obj else '' }}', '{{ d.ad }}', '{{ d.rol }}')">
                                             <i class="bi bi-pencil"></i>
                                         </button>
                                         <form
@@ -78,7 +93,7 @@
                                         <form
                                             action="{{ url_for('degerlendirici_sil', id=d.ad_soyad_obj.id if d.ad_soyad_obj else 0) }}"
                                             method="POST" class="d-inline"
-                                            onsubmit="return confirm('Bu değerlendiriciyi silmek istediğinize emin misiniz?')">
+                                            onsubmit="return confirm('Bu personeli silmek istediğinize emin misiniz?')">
                                             <button type="submit" class="btn btn-outline-danger" title="Sil">
                                                 <i class="bi bi-trash"></i>
                                             </button>
@@ -86,7 +101,14 @@
                                     </div>
                                 </td>
                             </tr>
+                            {% endif %}
                             {% endfor %}
+                            {% if not ns.found %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">Bu rolde personel bulunmamaktadır.
+                                </td>
+                            </tr>
+                            {% endif %}
                         </tbody>
                     </table>
                 </div>
@@ -94,6 +116,7 @@
         </div>
     </div>
 </div>
+{% endfor %}
 
 <!-- Add Modal -->
 <div class="modal fade" id="addDegerlendiriciModal" tabindex="-1">
@@ -110,6 +133,14 @@
                         <input type="text" name="ad_soyad" class="form-control" placeholder="Örn: AHMET YILMAZ"
                             required>
                         <small class="text-muted">İsimler otomatik olarak büyük harfe çevrilecektir.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Rol</label>
+                        <select name="rol" class="form-select" required>
+                            <option value="degerlendirici">Değerlendirici</option>
+                            <option value="koordinator">Koordinatör</option>
+                            <option value="yonetici">Yönetici</option>
+                        </select>
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
@@ -137,6 +168,14 @@
                         <small class="text-muted">İsim değişikliği geçmiş tüm başvuru kayıtlarında
                             güncellenecektir.</small>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Rol</label>
+                        <select name="rol" id="edit_rol" class="form-select" required>
+                            <option value="degerlendirici">Değerlendirici</option>
+                            <option value="koordinator">Koordinatör</option>
+                            <option value="yonetici">Yönetici</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Vazgeç</button>
@@ -161,11 +200,12 @@
 </style>
 
 <script>
-    function editDegerlendirici(id, ad) {
+    function editDegerlendirici(id, ad, rol) {
         if (!id) return;
         const form = document.getElementById('editForm');
         form.action = `/degerlendiriciler/${id}/duzenle`;
         document.getElementById('edit_ad_soyad').value = ad;
+        document.getElementById('edit_rol').value = rol || 'degerlendirici';
         new bootstrap.Modal(document.getElementById('editDegerlendiriciModal')).show();
     }
 </script>

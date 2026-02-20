@@ -719,6 +719,100 @@ body {
     border: 1px solid rgba(13, 148, 136, 0.2) !important;
 }
 
+/* ─── Coordinator Decision Buttons (Premium UI) ───────────────────────── */
+.decision-group {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.decision-option {
+    flex: 1;
+    position: relative;
+}
+
+.decision-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.decision-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.5rem 1rem;
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+}
+
+.decision-label i {
+    font-size: 2.5rem;
+    transition: var(--transition);
+}
+
+.decision-label .decision-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 2px;
+}
+
+.decision-label .decision-desc {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.decision-option--onay .decision-label i {
+    color: var(--accent-green);
+    opacity: 0.5;
+}
+
+.decision-option--red .decision-label i {
+    color: var(--accent-red);
+    opacity: 0.5;
+}
+
+.decision-label:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+[data-bs-theme="dark"] .decision-label:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Checked States */
+.decision-input:checked+.decision-label {
+    box-shadow: var(--shadow-lg);
+}
+
+.decision-option--onay .decision-input:checked+.decision-label {
+    border-color: var(--accent-green);
+    background: rgba(22, 163, 74, 0.08);
+}
+
+.decision-option--onay .decision-input:checked+.decision-label i {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.decision-option--red .decision-input:checked+.decision-label {
+    border-color: var(--accent-red);
+    background: rgba(220, 38, 38, 0.08);
+}
+
+.decision-option--red .decision-input:checked+.decision-label i {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
 /* ─── Footer ──────────────────────────────────────────────────────────── */
 .footer-bar {
     background: var(--bg-card);
@@ -809,21 +903,22 @@ body {
     animation-delay: 0.3s;
 }
 
-/* ─── Print Styles - Focused Deficiency Report ───────────────────────── */
+/* ─── Print Styles - Professional 1-Page Report ───────────────────────── */
 @media print {
     @page {
-        margin: 1.5cm;
+        margin: 1cm;
         size: A4;
     }
 
     body {
         background: white !important;
         color: black !important;
-        font-size: 11pt !important;
-        padding-top: 0 !important;
+        font-size: 10pt !important;
+        padding: 0 !important;
+        line-height: 1.3 !important;
     }
 
-    /* Hide UI non-essentials */
+    /* Hide Screen-Only Elements */
     .navbar,
     .footer-bar,
     .btn,
@@ -834,176 +929,176 @@ body {
     .modal,
     .section-header button,
     #degUyari,
-    .input-group-text,
-    .btn-icon,
     .badge i,
-    hr,
-    .card-header .bi {
+    .no-print-section,
+    .btn-icon,
+    hr {
         display: none !important;
     }
 
-    /* Hide satisfied items (The Core Change) */
-    .on-kontrol-row.on-kontrol-var,
-    .on-kontrol-row.on-kontrol-na,
-    .kriter-row.kriter-uygun {
-        display: none !important;
+    /* Layout Adjustments */
+    .container-fluid {
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
-
-    /* Hide description rows if the parent criterion is Appropriate */
-    .kriter-aciklama-row:not(.show) {
-        display: none !important;
-    }
-
-    /* If a whole section has no deficiencies, we might still want to show it or a "No issues" message, 
-       but for now let's just show the header and the items if they exist. */
 
     .glass-card,
     .card {
         background: transparent !important;
-        border: none !important;
+        border: 1px solid #ddd !important;
+        border-radius: 0 !important;
         box-shadow: none !important;
-        margin-bottom: 20pt !important;
-        padding: 0 !important;
-        overflow: visible !important;
+        margin-bottom: 10pt !important;
+        page-break-inside: avoid;
     }
 
     .card-body {
-        padding: 0 !important;
+        padding: 8pt !important;
     }
 
-    /* Report Header */
-    .print-header {
+    /* Report Title & Header */
+    .print-report-header {
         display: block !important;
         text-align: center;
-        margin-bottom: 2rem;
-        border-bottom: 2px solid #000;
-        padding-bottom: 1rem;
+        margin-bottom: 15pt;
+        padding-bottom: 10pt;
+        border-bottom: 2px solid #333;
     }
 
-    .print-header h1 {
+    .print-report-header h1 {
         font-size: 16pt;
         font-weight: 800;
-        margin: 0;
-    }
-
-    .print-header p {
-        margin: 4px 0;
-        font-size: 10pt;
-    }
-
-    /* Section Headers */
-    .section-header {
-        background: #f8f9fa !important;
-        color: black !important;
-        border-bottom: 1px solid #333 !important;
-        padding: 5pt 0 !important;
-        margin-top: 20pt !important;
-        border-radius: 0 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
-    .section-header h5 {
-        font-size: 13pt;
-        font-weight: 700;
         margin: 0;
         text-transform: uppercase;
     }
 
-    /* Application Info Grid */
-    .info-item {
-        margin-bottom: 8pt;
+    .print-report-header h2 {
+        font-size: 11pt;
+        margin: 4pt 0;
+        color: #555;
     }
 
-    .info-label {
-        font-size: 9pt !important;
-        color: #666 !important;
+    /* Compact Info Grid */
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5pt;
+        margin-bottom: 10pt;
+    }
+
+    .info-box {
+        border: 1px solid #eee;
+        padding: 4pt;
+    }
+
+    .info-box-label {
+        font-size: 8pt;
+        font-weight: 600;
+        color: #777;
+        text-transform: uppercase;
         display: block;
     }
 
-    .info-value {
-        font-size: 11pt !important;
-        font-weight: 700 !important;
+    .info-box-value {
+        font-size: 10pt;
+        font-weight: 700;
     }
 
-    /* Tables for Deficiencies */
-    .table {
-        width: 100% !important;
-        margin-top: 10pt !important;
-    }
-
-    .table th,
-    .table td {
-        border-bottom: 1px solid #eee !important;
-        padding: 8pt 0 !important;
-        text-align: left !important;
-    }
-
-    .table thead {
-        display: none !important;
-        /* Hide headers since we are listing deficiencies */
-    }
-
-    /* Status Indicators in Print */
-    .on-kontrol-row.on-kontrol-yok td:first-child::before {
-        content: "[EKSİK] ";
-        font-weight: 800;
-        color: #d63384;
-    }
-
-    .kriter-row.kriter-uygun-degil td.kriter-metin::before {
-        content: "[UYGUN DEĞİL] ";
-        font-weight: 800;
-        color: #d63384;
-    }
-
-    /* Hide the radio columns in print, just show the text and descriptions */
-    #onKontrolTablosu td:nth-child(2),
-    #onKontrolTablosu td:nth-child(3),
-    #onKontrolTablosu td:nth-child(4),
-    #kriterTablosu td:nth-child(3),
-    #kriterTablosu td:nth-child(4) {
-        display: none !important;
-    }
-
-    /* Show explanation text clearly */
-    .kriter-aciklama-row td {
-        padding-left: 20pt !important;
-        border-bottom: 1px solid #eee !important;
-    }
-
-    textarea,
-    input[type="text"] {
-        border: none !important;
-        background: transparent !important;
-        font-style: italic;
-        padding: 0 !important;
-        height: auto !important;
-        min-height: 0 !important;
-    }
-
-    /* Signatures */
-    .print-footer {
-        display: flex !important;
-        justify-content: space-around;
-        margin-top: 4rem;
+    /* Signature Section */
+    .signature-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20pt;
+        margin-top: 30pt;
         page-break-inside: avoid;
     }
 
-    .sig-box {
-        width: 40%;
+    .signature-item {
         text-align: center;
-        border-top: 1px solid #000;
-        padding-top: 10pt;
+        border-top: 1px solid #333;
+        padding-top: 5pt;
     }
 
-    /* Page Breaks */
-    .card,
-    .section-header {
-        page-break-inside: avoid;
+    .signature-title {
+        font-weight: 700;
+        font-size: 9pt;
+        margin-bottom: 2pt;
+    }
+
+    .signature-name {
+        font-size: 9pt;
+        margin-bottom: 20pt;
+    }
+
+    .signature-space {
+        height: 40pt;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Report Sections */
+    .report-section-title {
+        background: #f0f0f0 !important;
+        padding: 4pt 8pt;
+        font-weight: 700;
+        font-size: 10pt;
+        border-bottom: 1px solid #333;
+        margin-bottom: 5pt;
+        text-transform: uppercase;
+        -webkit-print-color-adjust: exact;
+    }
+
+    /* Results Table */
+    .report-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 10pt;
+    }
+
+    .report-table th,
+    .report-table td {
+        border: 1px solid #ddd;
+        padding: 4pt 6pt;
+        font-size: 9pt;
+        text-align: left;
+    }
+
+    .report-table th {
+        background: #fafafa !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .status-badge {
+        font-weight: 700;
+        padding: 1pt 4pt;
+        border: 1px solid #333;
+        font-size: 8pt;
+    }
+
+    /* Deficiency Focus */
+    .deficient-only .row-appropriate {
+        display: none !important;
+    }
+
+    /* Decisions */
+    .decision-summary {
+        padding: 8pt;
+        border: 2px solid #333;
+        background: #f9f9f9 !important;
+    }
+
+    /* Hide Original Elements in Report Mode */
+    .print-only {
+        display: block !important;
+    }
+
+    .screen-only {
+        display: none !important;
     }
 }
 
-.print-header {
+.print-only {
     display: none;
 }

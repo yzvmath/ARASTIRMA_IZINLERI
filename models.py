@@ -201,6 +201,7 @@ class Degerlendirici(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ad_soyad = db.Column(db.String(200), unique=True, nullable=False)
     aktif = db.Column(db.Boolean, default=True)
+    rol = db.Column(db.String(50), default="degerlendirici")  # degerlendirici, koordinator, yonetici
 
     def __repr__(self):
         return f"<Degerlendirici {self.ad_soyad}>"
