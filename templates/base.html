@@ -19,21 +19,21 @@
             <div class="collapse navbar-collapse ms-4" id="navbarNav">
                 <ul class="navbar-nav gap-2">
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'dashboard' }}"
+                        <a class="nav-link nav-pill-custom {{ 'active' if request.endpoint == 'dashboard' }}"
                             href="{{ url_for('dashboard') }}">
-                            <i class="bi bi-grid-fill me-1"></i>Başvuru Listesi
+                            <i class="bi bi-grid-fill"></i><span>Başvuru Listesi</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'tamamlanan_basvurular' }}"
+                        <a class="nav-link nav-pill-custom {{ 'active' if request.endpoint == 'tamamlanan_basvurular' }}"
                             href="{{ url_for('tamamlanan_basvurular') }}">
-                            <i class="bi bi-check-all me-1"></i>Tamamlanan İşlemler
+                            <i class="bi bi-check-all"></i><span>Tamamlanan İşlemler</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.endpoint == 'degerlendiriciler' }}"
+                        <a class="nav-link nav-pill-custom {{ 'active' if request.endpoint == 'degerlendiriciler' }}"
                             href="{{ url_for('degerlendiriciler') }}">
-                            <i class="bi bi-people-fill me-1"></i>Değerlendiriciler
+                            <i class="bi bi-people-fill"></i><span>Yetkililer</span>
                         </a>
                     </li>
                 </ul>
@@ -74,6 +74,9 @@
             <span>© 2026 MEB Araştırma Uygulama İzinleri Değerlendirme Platformu</span>
         </div>
     </footer>
+
+    <!-- Modals Block -->
+    {% block modals %}{% endblock %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>

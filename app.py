@@ -241,8 +241,29 @@ def mebbis_json_yukle(json_path):
             "meb_teskilati": _get_val_robust(kayit, "Uygulama Yapılacak MEB Teşkilatı"),
             "okul_kurum_sayisi": _get_val_robust(kayit, "Uygulama Okul/Kurum Sayısı"),
             "ozel_bilgiler": _get_val_robust(kayit, "Özel Bilgiler"),
-            "uygulama_suresi": _get_val_robust(kayit, "Uygulama Süresi", "SÜRE"),
+            "uygulama_suresi": "", # Başlangıçta boş bırak, aşağıda tablodan çekilecek
         }
+
+        # --- Uygulama Süresi İçin Kesin Ayıklama (Tablo Odaklı) ---
+        uyg_tablo = detay.get("Uygulama Bilgileri", [])
+        durations = []
+        if uyg_tablo and isinstance(uyg_tablo, list):
+            for row in uyg_tablo:
+                if isinstance(row, list) and len(row) >= 6:
+                    # 6. sütun (Uygulama Süresi) - Örn: "15 Ders Saati"
+                    duration = str(row[5]).strip()
+                    # Case-insensitive arama yap (dk, dakika, ders, saat, oturum)
+                    match_keywords = ["ders", "saat", "dakika", " oturum", " dk"]
+                    if duration and duration not in durations and any(k in duration.lower() for k in match_keywords):
+                        durations.append(duration)
+        
+        if durations:
+            yeni_veri["uygulama_suresi"] = ", ".join(durations)
+        else:
+            # Tablodan bulunamadıysa fallback (Sadece "Ders Saati" veya "Dakika" içeriyorsa güven)
+            fallback_val = _get_val_robust(kayit, "Uygulama Süresi")
+            if any(k in fallback_val for k in ["Ders", "Dakika", "Saat"]):
+                yeni_veri["uygulama_suresi"] = fallback_val
 
         # ───────────────────────────────────────────────────────────────────────────
         # BELGE AYRIŞTIRMA VE EŞLEŞTİRME (Refactored)
@@ -274,7 +295,7 @@ def mebbis_json_yukle(json_path):
                                 
                                 # Eğer temizleme sonucu boş kaldıysa (veya ayırıcı yoksa) orijinali koru
                                 if not clean_text:
-                                    clean_text = text
+                                    clean_text = _text
                                 
                                 # Uzantı temizliği (örn: .pdf, .docx sil)
                                 base_text = str(clean_text)
@@ -422,9 +443,16 @@ def mebbis_json_yukle(json_path):
 
         for db_field, val in yeni_veri.items():
             old_val = getattr(target_obj, db_field, "") or ""
+            
+            # Normal güncelleme: Yeni değer varsa ve eskisinden farklıysa
             if val and str(val) != str(old_val):
                 setattr(target_obj, db_field, val)
                 is_changed = True
+            # ÖZEL DURUM: uygulama_suresi temizleme (Eğer eskisi yanlış bir değerlendirme süresiyse)
+            elif db_field == "uygulama_suresi" and not val and old_val:
+                if "gün" in old_val.lower() or "2026" in old_val:
+                    setattr(target_obj, db_field, "")
+                    is_changed = True
 
         # 7. Belgeleri Uygula (JSON String)
         def liste_to_json(liste):
@@ -485,51 +513,99 @@ def _get_degerlendirici_stats():
     # Burada iş yükü panelleri için aktifleri alalım.
     degerlendiriciler_db = Degerlendirici.query.all()
 
+    # Ön hesaplamalar (Verimlilik için)
+    # Koordinatör iş yükü: Aktif başvuru listesindeki sayı (Tamamlananlar hariç)
+    coordinator_active_count = Basvuru.query.filter(
+        ~Basvuru.degerlendirme_durumu.in_(["onaylandi", "reddedildi", "ONAYLANDI", "REDDEDİLDİ"])
+    ).count()
+    
+    # Koordinatör son 30 gün: Tamamlanan ve aktif tüm başvurular (oluşturma veya güncelleme son 30 gün)
+    coordinator_30_day_count = Basvuru.query.filter(
+        (Basvuru.olusturma_tarihi >= thirty_days_ago) | (Basvuru.guncelleme_tarihi >= thirty_days_ago)
+    ).count()
+
+    # Yönetici iş yükü: yönetici onayındakiler
+    manager_active_count = Basvuru.query.filter_by(degerlendirme_durumu='yonetici_onayinda').count()
+    
+    # Yönetici son 30 gün: Aktif yönetici onayındakiler + Tamamlananlar (son 30 gün)
+    manager_30_day_count = Basvuru.query.filter(
+        (Basvuru.degerlendirme_durumu == 'yonetici_onayinda') | 
+        (Basvuru.degerlendirme_durumu.in_(["onaylandi", "reddedildi", "ONAYLANDI", "REDDEDİLDİ"]) & 
+         ((Basvuru.olusturma_tarihi >= thirty_days_ago) | (Basvuru.guncelleme_tarihi >= thirty_days_ago)))
+    ).count()
+
     for d_obj in degerlendiriciler_db:
         d = d_obj.ad_soyad
-        atamalar = BasvuruDegerlendirici.query.filter_by(degerlendirici_adi=d).all()
-        gorevler = []
-        bekliyor = devam = tamamlandi = 0
-        tamamlandi_30_gun = 0
-        toplam_30_gun = 0
+        rol = d_obj.rol
         
-        for atama in atamalar:
-            b = Basvuru.query.get(atama.basvuru_id)
-            if not b:
-                continue
+        if rol == 'koordinator':
+            aktif_toplam = coordinator_active_count
+            tamamlandi_30_gun = coordinator_30_day_count 
+            toplam_30_gun = coordinator_30_day_count
+            bekliyor = devam = tamamlandi = 0
+            gorevler = []
+        elif rol == 'yonetici':
+            aktif_toplam = manager_active_count
+            tamamlandi_30_gun = manager_30_day_count
+            toplam_30_gun = manager_30_day_count
+            bekliyor = devam = tamamlandi = onayladi = reddetti = 0
+            gorevler = []
+        else:
+            # Standart Reviewer (degerlendirici) mantığı
+            atamalar = BasvuruDegerlendirici.query.filter_by(degerlendirici_adi=d).all()
+            gorevler = []
+            bekliyor = devam = tamamlandi = onayladi = reddetti = 0
+            tamamlandi_30_gun = 0
+            toplam_30_gun = 0
             
-            durum = b.degerlendirme_durumu or "bekliyor"
-            
-            # Son 30 gün kontrolü (Herhangi bir aktivite: yeni başvuru veya güncelleme)
-            is_recent = False
-            if b.olusturma_tarihi and b.olusturma_tarihi >= thirty_days_ago:
-                is_recent = True
-            elif b.guncelleme_tarihi and b.guncelleme_tarihi >= thirty_days_ago:
-                is_recent = True
-            
-            if is_recent:
-                toplam_30_gun += 1
-                if durum in ["onaylandi", "reddedildi"]:
-                    tamamlandi_30_gun += 1
-            
-            # Aktif görevleri listeye ekle (Sadece devam edenler)
-            if durum not in ["onaylandi", "reddedildi"]:
-                if durum == "bekliyor":
-                    bekliyor += 1
-                elif durum == "devam":
-                    devam += 1
-                elif durum == "tamamlandi":
-                    tamamlandi += 1
+            for atama in atamalar:
+                b = Basvuru.query.get(atama.basvuru_id)
+                if not b:
+                    continue
                 
-                gorevler.append({
-                    "id": b.id,
-                    "basvuru_no": b.basvuru_no,
-                    "ad_soyad": b.ad_soyad,
-                    "durum": durum,
-                    "obj": b,
-                })
-            
-        aktif_toplam = len(gorevler)
+                durum = b.degerlendirme_durumu or "bekliyor"
+                
+                is_recent = False
+                if b.olusturma_tarihi and b.olusturma_tarihi >= thirty_days_ago:
+                    is_recent = True
+                elif b.guncelleme_tarihi and b.guncelleme_tarihi >= thirty_days_ago:
+                    is_recent = True
+                
+                if is_recent:
+                    toplam_30_gun += 1
+                    if durum in ["onaylandi", "reddedildi"]:
+                        tamamlandi_30_gun += 1
+                
+                if durum not in ["onaylandi", "reddedildi"]:
+                    # Değerlendirici kendi kararını vermişse, onun için bu iş 'tamamlanmış' sayılır
+                    rev_durum = durum
+                    if atama.karar is not None:
+                        tamamlandi += 1
+                        if atama.karar == 'ONAY':
+                            onayladi += 1
+                        elif atama.karar == 'RED':
+                            reddetti += 1
+                        rev_durum = "tamamlandi"
+                    else:
+                        # Eğer Koordinatör henüz Ön Kontrolü bitirmediyse değerlendirici için 'bekliyor' (kum saati)
+                        if b.basvuru_durumu != "Ön Değerlendirme Tamamlandı":
+                            bekliyor += 1
+                            rev_durum = "bekliyor"
+                        else:
+                            # Ön kontrol bittiyse ve değerlendirici karar vermediyse 'devam' (aktif iş yükü)
+                            devam += 1
+                            rev_durum = "devam"
+                    
+                    gorevler.append({
+                        "id": b.id,
+                        "basvuru_no": b.basvuru_no,
+                        "ad_soyad": b.ad_soyad,
+                        "durum": rev_durum,
+                        "karar": atama.karar,
+                        "obj": b,
+                    })
+            aktif_toplam = len(gorevler)
+
         stats = {
             "ad": d,
             "ad_soyad_obj": d_obj,
@@ -537,10 +613,13 @@ def _get_degerlendirici_stats():
             "bekliyor": bekliyor,
             "devam": devam,
             "tamamlandi": tamamlandi,
+            "onayladi": onayladi,
+            "reddetti": reddetti,
             "gorevler": gorevler,
-            "son_30_gun": tamamlandi_30_gun, # Geriye dönük uyumluluk için tamamlanan
+            "son_30_gun": tamamlandi_30_gun, 
             "toplam_30_gun": toplam_30_gun,
-            "aktif": d_obj.aktif
+            "aktif": d_obj.aktif,
+            "rol": rol
         }
         deg_panel.append(stats)
         is_yuku[d] = stats
@@ -558,17 +637,17 @@ def dashboard():
     aktif_basvurular = Basvuru.query.filter(~Basvuru.degerlendirme_durumu.in_(["onaylandi", "reddedildi"])).all()
     total_active = len(aktif_basvurular)
     
-    # 2. Ön Değerlendirmedekiler & 3. Onay Bekleyenler
+    # 2. İnceleme Aşamasındakiler & 3. Yönetici Onayındakiler
     prelim_count = 0
     pending_count = 0
     
     for b in aktif_basvurular:
         durum = b.degerlendirme_durumu
-        # Ön Değerlendirmedekiler: bekliyor, devam VEYA (tamamlandi ama değerlendirici atanmamış)
-        if durum in ['bekliyor', 'devam'] or (durum == 'tamamlandi' and not b.degerlendiriciler):
+        # İnceleme Aşamasındakiler: Değerlendiriciler İnceliyor
+        # ("devam" durumunda olanlar VEYA "tamamlandi" (ön kontrol bitmiş) olup değerlendirici atanmış olanlar)
+        if durum == 'devam' or (durum == 'tamamlandi' and b.degerlendiriciler):
             prelim_count += 1
-        # Onay Bekleyenler: (tamamlandi + değerlendirici var) VEYA yonetici_onayinda VEYA okul_secimi
-        else:
+        elif durum == 'yonetici_onayinda':
             pending_count += 1
             
     # 4. Tamamlananlar: Onaylanmış veya Reddedilmiş
@@ -581,11 +660,16 @@ def dashboard():
         "completed": completed_count
     }
     
-    # Dashboard içeriği (Listelenenler)
     # Dashboard içeriği (Listelenenler) - Sadece aktif olanları göster (Tamamlananlar hariç)
+    # Tarihe göre sırala (DD.MM.YYYY -> YYYY-MM-DD olarak sıralamak için substr kullanıyoruz)
+    import sqlalchemy
+    sort_str = sqlalchemy.func.substr(Basvuru.basvuru_tarihi, 7, 4) + \
+               sqlalchemy.func.substr(Basvuru.basvuru_tarihi, 4, 2) + \
+               sqlalchemy.func.substr(Basvuru.basvuru_tarihi, 1, 2)
+               
     basvurular = Basvuru.query.filter(
         ~Basvuru.degerlendirme_durumu.in_(["onaylandi", "reddedildi", "ONAYLANDI", "REDDEDİLDİ"])
-    ).order_by(Basvuru.olusturma_tarihi.desc()).all()
+    ).order_by(sort_str.desc()).all()
     
     yeni_idler_list = session.get("yeni_idler")
     if yeni_idler_list:
@@ -612,9 +696,14 @@ def dashboard():
 @app.route("/tamamlananlar")
 def tamamlanan_basvurular():
     """Tamamlanan İşlemler sayfası: Onaylanmış veya Reddedilmiş başvurular."""
+    import sqlalchemy
+    sort_str = sqlalchemy.func.substr(Basvuru.basvuru_tarihi, 7, 4) + \
+               sqlalchemy.func.substr(Basvuru.basvuru_tarihi, 4, 2) + \
+               sqlalchemy.func.substr(Basvuru.basvuru_tarihi, 1, 2)
+
     basvurular = Basvuru.query.filter(
         Basvuru.degerlendirme_durumu.in_(["onaylandi", "reddedildi"])
-    ).order_by(Basvuru.guncelleme_tarihi.desc()).all()
+    ).order_by(sort_str.desc()).all()
 
     return render_template(
         "tamamlananlar.html",
@@ -661,7 +750,12 @@ def degerlendirme(id):
     _, is_yuku = _get_degerlendirici_stats()
 
     # Sadece AKTİF değerlendiricileri seçim listesine gönder
-    degerlendiriciler_list = [d.ad_soyad for d in Degerlendirici.query.filter_by(aktif=True).all()]
+    # Yalnızca rolü 'degerlendirici' olan aktif kişileri getir
+    degerlendiriciler_list = [d.ad_soyad for d in Degerlendirici.query.filter_by(aktif=True, rol='degerlendirici').all()]
+    
+    # Koordinatör ve Yöneticileri getir (Yazdırma/İmza alanı için)
+    koordinatorler = Degerlendirici.query.filter_by(aktif=True, rol='koordinator').all()
+    yoneticiler = Degerlendirici.query.filter_by(aktif=True, rol='yonetici').all()
 
     return render_template(
         "degerlendirme.html",
@@ -673,6 +767,8 @@ def degerlendirme(id):
         on_kontrol_maddeleri=ON_KONTROL_MADDELERI,
         atanmis_degerlendiriciler=atanmis,
         is_yuku=is_yuku,
+        koordinatorler=koordinatorler,
+        yoneticiler=yoneticiler,
     )
 
 
@@ -894,11 +990,15 @@ def degerlendiriciler():
 @app.route("/degerlendiriciler/ekle", methods=["POST"])
 def degerlendirici_ekle():
     ad = request.form.get("ad_soyad", "").strip().upper()
+    tc = request.form.get("tc_kimlik", "").strip()
+    rol = request.form.get("rol", "degerlendirici")
     if ad:
         if Degerlendirici.query.filter_by(ad_soyad=ad).first():
             flash(f"{ad} zaten kayıtlı.", "warning")
+        elif tc and Degerlendirici.query.filter_by(tc_kimlik=tc).first():
+            flash(f"{tc} T.C. Kimlik numarası zaten sisteme kayıtlı.", "warning")
         else:
-            db.session.add(Degerlendirici(ad_soyad=ad, aktif=True))
+            db.session.add(Degerlendirici(ad_soyad=ad, tc_kimlik=tc, aktif=True, rol=rol))
             db.session.commit()
             flash(f"{ad} eklendi.", "success")
     return redirect(url_for("degerlendiriciler"))
@@ -907,17 +1007,27 @@ def degerlendirici_ekle():
 def degerlendirici_duzenle(id):
     d = Degerlendirici.query.get_or_404(id)
     yeni_ad = request.form.get("ad_soyad", "").strip().upper()
+    yeni_tc = request.form.get("tc_kimlik", "").strip()
     eski_ad = d.ad_soyad
+    yeni_rol = request.form.get("rol", d.rol)
     
-    if yeni_ad and yeni_ad != eski_ad:
-        # Mevcut atamalardaki isimleri de güncelle (tutarlılık için)
-        atamalar = BasvuruDegerlendirici.query.filter_by(degerlendirici_adi=eski_ad).all()
-        for atama in atamalar:
-            atama.degerlendirici_adi = yeni_ad
+    if yeni_tc and yeni_tc != d.tc_kimlik:
+        if Degerlendirici.query.filter_by(tc_kimlik=yeni_tc).first():
+            flash(f"{yeni_tc} T.C. Kimlik numarası zaten başka bir kayıtta mevcut.", "warning")
+            return redirect(url_for("degerlendiriciler"))
+
+    if yeni_ad:
+        if yeni_ad != eski_ad:
+            # Mevcut atamalardaki isimleri de güncelle (tutarlılık için)
+            atamalar = BasvuruDegerlendirici.query.filter_by(degerlendirici_adi=eski_ad).all()
+            for atama in atamalar:
+                atama.degerlendirici_adi = yeni_ad
+            d.ad_soyad = yeni_ad
         
-        d.ad_soyad = yeni_ad
+        d.tc_kimlik = yeni_tc
+        d.rol = yeni_rol
         db.session.commit()
-        flash("Değerlendirici ismi güncellendi.", "success")
+        flash("Personel bilgileri güncellendi.", "success")
     
     return redirect(url_for("degerlendiriciler"))
 
@@ -1116,6 +1226,52 @@ def kompleks_durum_metni_filter(b):
         return "REDDEDİLDİ"
         
     return durum or "Bilinmiyor"
+    
+
+@app.template_filter("kalan_sure")
+def kalan_sure_filter(tarih_str):
+    """Başvuru tarihinden itibaren 15 günlük süreden ne kadar kaldığını hesaplar."""
+    if not tarih_str or tarih_str == '-':
+        return None
+        
+    try:
+        # DD.MM.YYYY formatını parse et (SADECE TARİH BAZLI HESAPLAMA)
+        basvuru_tarihi = datetime.strptime(tarih_str, "%d.%m.%Y").date()
+        hedef_tarih = basvuru_tarihi + timedelta(days=15)
+        bugun = datetime.now().date() 
+        
+        diff = hedef_tarih - bugun
+        kalan_gun = diff.days
+        
+        # Eğer saat farkı varsa ve gün 0 ise ama henüz geçmediyse 0 gün gösterir. 
+        # Daha hassas bir "gün" hesabı için:
+        if kalan_gun < 0:
+            status = "expired"
+            metin = f"{abs(kalan_gun)} GÜN GEÇTİ"
+        elif kalan_gun == 0:
+            status = "danger"
+            metin = "Bugün son gün!"
+        elif kalan_gun <= 3:
+            status = "danger"
+            metin = f"{kalan_gun} GÜN KALDI"
+        elif kalan_gun <= 6:
+            status = "critical"
+            metin = f"{kalan_gun} gün kaldı"
+        elif kalan_gun <= 10:
+            status = "warning"
+            metin = f"{kalan_gun} gün kaldı"
+        else:
+            status = "safe"
+            metin = f"{kalan_gun} gün kaldı"
+            
+        return {
+            "days": kalan_gun,
+            "status": status,
+            "text": metin
+        }
+    except Exception as e:
+        print(f"Hata (kalan_sure): {e}")
+        return None
 
 
 @app.route("/basvuru/<int:id>/geri-al", methods=["POST"])
@@ -1136,6 +1292,41 @@ def basvuru_geri_al(id):
     db.session.commit()
     flash(f"Başvuru ({basvuru.basvuru_no}) 'Okul Seçimi' aşamasına geri alındı.", "success")
     return redirect(url_for("tamamlanan_basvurular"))
+
+
+@app.route("/api/basvuru/<int:id>/history")
+def basvuru_history(id):
+    """Başvurunun geçmiş versiyonlarını JSON olarak döndürür."""
+    basvuru = Basvuru.query.get_or_404(id)
+    history = []
+    
+    for b in basvuru.önceki_başvurular:
+        # Template'lerdekiyle aynı mantık: koordinator_karari yoksa durumuna bak
+        karar = b.koordinator_karari
+        if karar == 'RED':
+            karar = 'RED'
+        elif karar == 'ONAY' or b.degerlendirme_durumu in ['okul_secimi', 'onaylandi']:
+            karar = 'ONAY'
+        elif b.degerlendirme_durumu == 'reddedildi':
+            karar = 'RED'
+        else:
+            karar = 'BEKLİYOR'
+
+        history.append({
+            "id": b.id,
+            "basvuru_no": b.basvuru_no,
+            "tarih": b.basvuru_tarihi or "-",
+            "durum": kompleks_durum_metni_filter(b),
+            "renk": durum_renk_filter(b.degerlendirme_durumu),
+            "karar": karar,
+            "arastirma_adi": b.arastirma_adi or "-",
+            "url": url_for('degerlendirme', id=b.id)
+        })
+        
+    return jsonify({
+        "current_no": basvuru.basvuru_no,
+        "history": history
+    })
 
 
 # ─── ANA ÇALIŞTIRMA ──────────────────────────────────────────────────────────

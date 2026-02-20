@@ -84,6 +84,53 @@ class Basvuru(db.Model):
     def __repr__(self):
         return f"<Basvuru {self.basvuru_no}>"
 
+    @property
+    def önceki_başvurular(self):
+        """Aynı araştırmanın önceki versiyonlarını VE aynı kişinin diğer başvurularını bulur."""
+        sonuc_dict = {} # Tekilleştirmek için sözlük kullanıyoruz (id -> nesne)
+
+        # 1. Versiyon Geçmişi (Örn: 2024.001.01 ve 2024.001.02)
+        if self.basvuru_no and "." in self.basvuru_no:
+            parcalar = self.basvuru_no.split(".")
+            if len(parcalar) >= 2:
+                kok_no = ".".join(parcalar[:-1])
+                try:
+                    mevcut_versiyon = int(parcalar[-1])
+                    
+                    # Aynı kök numarasına sahip ama daha düşük versiyonlu başvuruları getir
+                    öncekiler = Basvuru.query.filter(
+                        Basvuru.basvuru_no.like(f"{kok_no}.%"),
+                        Basvuru.id != self.id
+                    ).all()
+                    
+                    for b in öncekiler:
+                        try:
+                            b_versiyon = int(b.basvuru_no.split(".")[-1])
+                            if b_versiyon < mevcut_versiyon:
+                                sonuc_dict[b.id] = b
+                        except (ValueError, IndexError):
+                            continue
+                except ValueError:
+                    pass
+
+        # 2. Aynı Kişinin Diğer Başvuruları (TC Kimlik ve Ad Soyad eşleşmesi ile)
+        # TC Kimlik veya Ad Soyad boş değilse çalıştır
+        if self.tc_kimlik and self.ad_soyad and str(self.tc_kimlik).strip() and str(self.ad_soyad).strip():
+            diger_basvurular = Basvuru.query.filter(
+                Basvuru.tc_kimlik == self.tc_kimlik,
+                Basvuru.ad_soyad == self.ad_soyad,
+                Basvuru.id != self.id
+            ).all()
+
+            for b in diger_basvurular:
+                if b.id not in sonuc_dict:
+                    sonuc_dict[b.id] = b
+
+        # Tüm sonuçları listeye çevirip ID'ye göre sırala (En büyük ID en yenidir)
+        sonuc_listesi = list(sonuc_dict.values())
+        sonuc_listesi.sort(key=lambda x: x.id, reverse=True)
+        
+        return sonuc_listesi
 
 # 12 ön kontrol maddesi sabitleri
 ON_KONTROL_MADDELERI = [
@@ -199,8 +246,10 @@ class Degerlendirici(db.Model):
     __tablename__ = "degerlendirici"
 
     id = db.Column(db.Integer, primary_key=True)
+    tc_kimlik = db.Column(db.String(11))
     ad_soyad = db.Column(db.String(200), unique=True, nullable=False)
     aktif = db.Column(db.Boolean, default=True)
+    rol = db.Column(db.String(50), default="degerlendirici")  # degerlendirici, koordinator, yonetici
 
     def __repr__(self):
         return f"<Degerlendirici {self.ad_soyad}>"

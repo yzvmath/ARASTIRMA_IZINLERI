@@ -1,23 +1,5 @@
 {% extends "base.html" %}
 {% block title %}Dashboard - MEB Araştırma Uygulama İzinleri{% endblock %}
-{% block head %}
-<style>
-    .research-title-cell {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        line-height: 1.4;
-        max-height: 2.8em;
-        white-space: normal;
-        padding-top: 0.5rem !important;
-        padding-bottom: 0.5rem !important;
-        font-size: 0.9rem;
-    }
-</style>
-{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -47,7 +29,7 @@
             </div>
             <div>
                 <div class="stat-value">{{ stats.active }}</div>
-                <div class="stat-label">Aktif Başvuru</div>
+                <div class="stat-label">Toplam Aktif Başvuru</div>
             </div>
         </div>
     </div>
@@ -58,7 +40,7 @@
             </div>
             <div>
                 <div class="stat-value text-warning-dark">{{ stats.prelim }}</div>
-                <div class="stat-label">Ön Değerlendirmedekiler</div>
+                <div class="stat-label">İnceleme Aşamasındakiler</div>
             </div>
         </div>
     </div>
@@ -69,7 +51,7 @@
             </div>
             <div>
                 <div class="stat-value">{{ stats.pending }}</div>
-                <div class="stat-label">Onay Bekleyenler</div>
+                <div class="stat-label">Yönetici Onayındakiler</div>
             </div>
         </div>
     </div>
@@ -96,6 +78,7 @@
     <div class="card-body">
         <div class="row g-3">
             {% for dp in deg_panel %}
+            {% if dp.rol == 'degerlendirici' %}
             <div class="col-md-6 col-lg-3">
                 <div class="deg-panel-card">
                     <div class="deg-panel-header">
@@ -117,37 +100,52 @@
                     {% if dp.toplam > 0 %}
                     <div class="deg-progress-row">
                         <div class="progress deg-progress">
-                            {% set pct_tam = (dp.tamamlandi / dp.toplam * 100)|round|int %}
+                            {% set pct_onay = (dp.onayladi / dp.toplam * 100)|round|int %}
+                            {% set pct_red = (dp.reddetti / dp.toplam * 100)|round|int %}
                             {% set pct_dev = (dp.devam / dp.toplam * 100)|round|int %}
                             {% set pct_bek = (dp.bekliyor / dp.toplam * 100)|round|int %}
-                            <div class="progress-bar bg-success" style="width: {{ pct_tam }}%"
-                                title="Tamamlandı: {{ dp.tamamlandi }}"></div>
-                            <div class="progress-bar bg-info" style="width: {{ pct_dev }}%"
-                                title="Devam: {{ dp.devam }}"></div>
-                            <div class="progress-bar bg-warning" style="width: {{ pct_bek }}%"
-                                title="Bekliyor: {{ dp.bekliyor }}"></div>
-                        </div>
-                        <div class="deg-stats-mini">
-                            <span class="text-success"><i class="bi bi-check-circle-fill"></i> {{ dp.tamamlandi
-                                }}</span>
-                            <span class="text-info"><i class="bi bi-pencil-square"></i> {{ dp.devam }}</span>
-                            <span class="text-warning-dark"><i class="bi bi-hourglass-split"></i> {{ dp.bekliyor
-                                }}</span>
+                            <div class="progress-bar bg-success fw-bold text-white overflow-visible"
+                                style="width: {{ pct_onay }}%; font-size: 0.70rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"
+                                title="Kabul Etti: {{ dp.onayladi }}">{% if dp.onayladi > 0 %}{{ dp.onayladi }}{% endif
+                                %}</div>
+                            <div class="progress-bar bg-danger fw-bold text-white overflow-visible"
+                                style="width: {{ pct_red }}%; font-size: 0.70rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"
+                                title="Reddetti: {{ dp.reddetti }}">{% if dp.reddetti > 0 %}{{ dp.reddetti }}{% endif %}
+                            </div>
+                            <div class="progress-bar bg-warning-dark fw-bold text-white overflow-visible"
+                                style="width: {{ pct_dev }}%; font-size: 0.70rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"
+                                title="İnceliyor: {{ dp.devam }}">{% if dp.devam > 0 %}{{ dp.devam }}{% endif %}</div>
+                            <div class="progress-bar bg-warning-dark fw-bold text-white overflow-visible"
+                                style="width: {{ pct_bek }}%; font-size: 0.70rem; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);"
+                                title="Bekliyor: {{ dp.bekliyor }}">{% if dp.bekliyor > 0 %}{{ dp.bekliyor }}{% endif %}
+                            </div>
                         </div>
                     </div>
 
                     <!-- Görev listesi -->
                     <div class="deg-gorev-list">
                         {% for g in dp.gorevler %}
-                        <a href="{{ url_for('degerlendirme', id=g.id) }}" class="deg-gorev-item"
-                            title="{{ g.ad_soyad or '-' }}">
-                            <span
-                                class="deg-gorev-dot bg-{{ 'success' if g.durum == 'tamamlandi' else 'info' if g.durum == 'devam' else 'warning-dark' }}"></span>
-                            <span class="deg-gorev-text">{{ g.basvuru_no }}</span>
-                            <span
-                                class="badge bg-{{ 'success' if g.durum == 'tamamlandi' else 'info' if g.durum == 'devam' else 'warning-dark' }}-subtle text-{{ 'success' if g.durum == 'tamamlandi' else 'info' if g.durum == 'devam' else 'warning-dark' }} deg-gorev-badge">
-                                {{ g.obj|kompleks_durum_metni }}
-                            </span>
+                        <a href="{{ url_for('degerlendirme', id=g.id) }}"
+                            class="deg-gorev-item d-flex align-items-center" title="{{ g.ad_soyad or '-' }}">
+                            <div style="width: 85px; display: inline-block;">
+                                {% if g.karar == 'ONAY' %}
+                                <i class="bi bi-check-circle-fill text-success" title="Kabul Etti"></i> <span
+                                    class="text-success fw-bold ms-1" style="font-size: 0.65rem;">ONAY</span>
+                                {% elif g.karar == 'RED' %}
+                                <i class="bi bi-x-circle-fill text-danger" title="Reddetti"></i> <span
+                                    class="text-danger fw-bold ms-1" style="font-size: 0.65rem;">RED</span>
+                                {% else %}
+                                {% if g.durum == 'bekliyor' %}
+                                <i class="bi bi-hourglass-split text-warning-dark" title="Ön Kontrol Bekliyor"></i>
+                                <span class="text-warning-dark fw-bold ms-1"
+                                    style="font-size: 0.65rem;">İNCELİYOR</span>
+                                {% else %}
+                                <i class="bi bi-pencil-square text-warning-dark" title="İnceliyor"></i> <span
+                                    class="text-warning-dark fw-bold ms-1" style="font-size: 0.65rem;">İNCELİYOR</span>
+                                {% endif %}
+                                {% endif %}
+                            </div>
+                            <span class="deg-gorev-text ms-2 text-dark">{{ g.basvuru_no }}</span>
                         </a>
                         {% endfor %}
                     </div>
@@ -158,6 +156,7 @@
                     {% endif %}
                 </div>
             </div>
+            {% endif %}
             {% endfor %}
         </div>
     </div>
@@ -167,7 +166,7 @@
 <!-- BAŞVURU TABLOSU                                                        -->
 <!-- ═══════════════════════════════════════════════════════════════════════ -->
 <div class="card glass-card">
-    <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="card-header section-header section-header--mustard d-flex justify-content-between align-items-center">
         <h5 class="mb-0"><i class="bi bi-table me-2"></i>Başvuru Listesi</h5>
         <div class="d-flex gap-2">
             <input type="search" id="aramaInput" class="form-control form-control-sm" placeholder="Ara..."
@@ -180,15 +179,19 @@
             <table class="table table-hover align-middle mb-0" id="basvuruTablosu">
                 <thead>
                     <tr>
-                        <th class="ps-4">#</th>
-                        <th>Başvuru No</th>
-                        <th>Tarih</th>
-                        <th>Araştırmacı</th>
+                        <th class="ps-4" style="width: 50px;">#</th>
+                        <th style="width: 160px;">Başvuru No</th>
+                        <th id="sortDate" class="text-center" style="width: 100px; cursor: pointer; user-select: none;">
+                            Tarih <i class="bi bi-arrow-down small ms-1 text-primary"></i>
+                        </th>
+                        <th style="width: 140px;">Araştırmacı</th>
                         <th>Araştırma Adı</th>
                         <th class="text-center" style="width: 100px;">Nitelik</th>
-                        <th style="width: 200px;">Değerlendiriciler</th>
+                        <th class="text-center" style="width: 200px;">Değerlendiriciler</th>
+                        <th class="text-center" style="width: 120px; line-height: 1.2; font-size: 0.75rem;">
+                            Koordinatör<br>Kararı</th>
                         <!-- <th class="text-center">Yönetici</th> -->
-                        <th>Durum</th>
+                        <th class="text-center">Durum</th>
                         <th class="text-center">İşlem</th>
                     </tr>
                 </thead>
@@ -197,40 +200,80 @@
                     <tr>
                         <td class="ps-4 text-muted">{{ loop.index }}</td>
                         <td>
-                            <span class="fw-semibold text-primary">{{ b.basvuru_no }}</span>
-                            {% if b.id in yeni_idler %}
-                            <span class="badge bg-danger ms-1 yeni-badge"><i class="bi bi-stars me-1"></i>Yeni</span>
-                            {% endif %}
+                            <div class="d-flex flex-column align-items-start">
+                                <span class="fw-semibold text-primary">{{ b.basvuru_no }}</span>
+                                {% if b.id in yeni_idler %}
+                                <span class="badge bg-danger ms-1 yeni-badge"><i
+                                        class="bi bi-stars me-1"></i>Yeni</span>
+                                {% endif %}
+
+                                {% set oncelikler = b.önceki_başvurular %}
+                                {% if oncelikler %}
+                                <div class="history-trigger" data-basvuru-id="{{ b.id }}">
+                                    <i class="bi bi-stack"></i>Önceki Başvurular ({{ oncelikler|length }}) <i
+                                        class="bi bi-chevron-down history-chevron ms-1"></i>
+                                </div>
+                                {% endif %}
+                            </div>
                         </td>
-                        <td>{{ b.basvuru_tarihi or '-' }}</td>
+                        <td class="text-center">
+                            <div class="d-flex flex-column align-items-center">
+                                <span>{{ b.basvuru_tarihi or '-' }}</span>
+                                {% set kalan = b.basvuru_tarihi | kalan_sure %}
+                                {% if kalan %}
+                                <span class="countdown-badge countdown-{{ kalan.status }}">
+                                    <i class="bi bi-clock-history me-1"></i>{{ kalan.text }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </td>
                         <td>{{ b.ad_soyad or '-' }}</td>
-                        <td class="text-wrap research-title-cell" style="max-width: 400px;"
+                        <td class="text-wrap"
+                            style="max-width: 350px; padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; font-size: 0.9rem;"
                             title="{{ b.arastirma_adi }}">
-                            {{ b.arastirma_adi or '-' }}
+                            <div class="research-title-cell">
+                                {{ b.arastirma_adi or '-' }}
+                            </div>
                         </td>
                         <td class="text-center"><span class="badge bg-secondary-subtle text-secondary"
                                 style="font-size: 0.75rem; white-space: normal; display: inline-block;">{{
                                 b.arastirma_niteligi or '-'
                                 }}</span></td>
                         <td style="min-width: 180px; max-width: 220px;">
-                            <div class="d-flex flex-column gap-1 align-items-start">
+                            <div class="d-flex flex-column gap-1 align-items-stretch w-100">
                                 {% if b.degerlendiriciler %}
                                 {% for bd in b.degerlendiriciler %}
-                                <div class="d-flex align-items-center gap-1 mb-1">
+                                <div class="d-flex align-items-center gap-2 mb-1 w-100">
+                                    <div style="width: 20px; text-align: center;">
+                                        {% if bd.karar == 'ONAY' %}
+                                        <i class="bi bi-check-circle-fill text-success" title="Onayladı"></i>
+                                        {% elif bd.karar == 'RED' %}
+                                        <i class="bi bi-x-circle-fill text-danger" title="Reddetti"></i>
+                                        {% else %}
+                                        <span class="small" title="Bekliyor">⏳</span>
+                                        {% endif %}
+                                    </div>
                                     <span class="badge bg-primary-subtle text-primary text-start text-wrap flex-grow-1"
                                         style="white-space: normal; line-height: 1.2;">{{ bd.degerlendirici_adi
                                         }}</span>
-                                    {% if bd.karar == 'ONAY' %}
-                                    <i class="bi bi-check-circle-fill text-success" title="Onayladı"></i>
-                                    {% elif bd.karar == 'RED' %}
-                                    <i class="bi bi-x-circle-fill text-danger" title="Reddetti"></i>
-                                    {% endif %}
                                 </div>
                                 {% endfor %}
                                 {% else %}
-                                <span class="text-muted small">-</span>
                                 {% endif %}
                             </div>
+                        </td>
+                        <td class="text-center">
+                            {% if b.koordinator_karari == 'RED' %}
+                            <span class="text-danger small fw-bold">❌ Red</span>
+                            {% elif b.koordinator_karari == 'ONAY' or b.degerlendirme_durumu == 'okul_secimi' %}
+                            <span class="text-success small fw-bold">✅ Kabul</span>
+                            {% elif b.degerlendirme_durumu == 'onaylandi' %}
+                            <span class="text-success small fw-bold">✅ Kabul</span>
+                            {% elif b.degerlendirme_durumu == 'reddedildi' %}
+                            <span class="text-danger small fw-bold">❌ Red</span>
+                            {% else %}
+                            <span class="small fw-bold" style="color: #9a6e03;">⏳ Bekliyor</span>
+                            {% endif %}
                         </td>
                         <!-- <td class="text-center">
                             {% if b.degerlendirme_durumu == 'okul_secimi' or b.degerlendirme_durumu == 'onaylandi' %}
@@ -244,7 +287,7 @@
                             <span class="text-muted small">-</span>
                             {% endif %}
                         </td> -->
-                        <td>
+                        <td class="text-center">
                             {# Calculate status text using new complex logic #}
                             {% set status_text = b|kompleks_durum_metni %}
                             {% set status_class = b.degerlendirme_durumu|durum_renk %}
@@ -270,6 +313,23 @@
                             </div>
                         </td>
                     </tr>
+                    {# Geçmiş Başvurular Genişleme Satırı #}
+                    {% if oncelikler %}
+                    <tr id="history-row-{{ b.id }}" class="history-row d-none">
+                        <td colspan="10" class="p-0 border-0">
+                            <div class="history-expand-wrapper" style="max-height: 0;">
+                                <div class="history-container">
+                                    <div id="history-content-{{ b.id }}" class="history-timeline">
+                                        <div class="text-center py-3">
+                                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
                     {% endfor %}
                 </tbody>
             </table>
@@ -320,11 +380,170 @@
 
 {% block scripts %}
 <script>
+    // Geçmiş Başvurular (Accordion / Satır Genişletme) Mantığı - Event Delegation ile
+    document.addEventListener('click', function (e) {
+        // Tıklanan öğe history-trigger mi veya içindeki bir öğe mi kontrol et
+        const trigger = e.target.closest('.history-trigger');
+        if (!trigger) return;
+
+        const basvuruId = trigger.getAttribute('data-basvuru-id');
+        const historyRow = document.getElementById(`history-row-${basvuruId}`);
+        if (!historyRow) return;
+
+        const wrapper = historyRow.querySelector('.history-expand-wrapper');
+        const content = document.getElementById(`history-content-${basvuruId}`);
+        const parentTr = trigger.closest('tr'); // Ana satırı bul
+
+        if (historyRow.classList.contains('d-none')) {
+            // AÇILIŞ
+            historyRow.classList.remove('d-none');
+            trigger.classList.add('active');
+            if (parentTr) parentTr.classList.add('active-history-parent');
+
+            // Veri yüklü değilse çek
+            if (content.getAttribute('data-loaded') !== 'true') {
+                fetch(`/api/basvuru/${basvuruId}/history`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.history && data.history.length > 0) {
+                            let html = '<div class="history-timeline">';
+                            data.history.forEach(item => {
+                                let kararMetni = item.karar;
+                                if (kararMetni === 'ONAY') kararMetni = 'ONAYLANDI';
+                                else if (kararMetni === 'RED') kararMetni = 'REDDEDİLDİ';
+                                else if (!kararMetni) kararMetni = 'BEKLİYOR';
+
+                                const ikon = item.karar === 'ONAY' ? '<i class="bi bi-check-circle-fill me-1"></i>' :
+                                    (item.karar === 'RED' ? '<i class="bi bi-x-circle-fill me-1"></i>' : '<i class="bi bi-clock me-1"></i>');
+                                html += `
+                                    <div class="history-item-embedded p-2 rounded mb-2 d-flex align-items-center gap-3" style="background-color: var(--bs-body-bg); border: 1px solid var(--border-color); box-shadow: 0 1px 3px rgba(0,0,0,0.02); margin-left: -5px;">
+                                        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1 px-2" style="font-size: 0.75rem;">${item.basvuru_no}</span>
+                                            <span class="text-muted small fw-medium" style="min-width: 85px;"><i class="bi bi-calendar-event me-1"></i>${item.tarih}</span>
+                                        </div>
+                                        <div class="text-truncate fw-medium text-secondary flex-grow-1" style="font-size: 0.82rem;" title="${item.arastirma_adi}">
+                                            <i class="bi bi-journal-bookmark-fill me-1 opacity-75"></i> ${item.arastirma_adi}
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                            <span class="badge bg-${item.renk}-subtle text-${item.renk} border border-${item.renk}-subtle shadow-sm px-2 py-1" style="font-size: 0.7rem; min-width: 85px; text-align: center;">
+                                                ${ikon}${kararMetni}
+                                            </span>
+                                            <a href="${item.url}" class="btn btn-sm btn-primary py-1 px-3 d-flex align-items-center gap-1" style="font-size: 0.72rem; border-radius: 20px; font-weight: 600;">
+                                                İncele <i class="bi bi-arrow-right"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                `;
+                            });
+                            html += '</div>';
+                            content.innerHTML = html;
+                        } else {
+                            content.innerHTML = '<div class="text-muted small italic">Önceki başvuru kaydı bulunamadı.</div>';
+                        }
+                        content.setAttribute('data-loaded', 'true');
+                        // scrollHeight sonrası max-height ayarla
+                        setTimeout(() => {
+                            wrapper.style.maxHeight = wrapper.scrollHeight + "px";
+                        }, 10);
+                    })
+                    .catch(err => {
+                        console.error("Geçmiş verisi alınamadı:", err);
+                        content.innerHTML = '<div class="text-danger small italic">Veri yüklenirken hata oluştu.</div>';
+                    });
+            } else {
+                // Zaten yüklüyse sadece aç
+                setTimeout(() => {
+                    wrapper.style.maxHeight = wrapper.scrollHeight + "px";
+                }, 10);
+            }
+        } else {
+            // KAPANIŞ
+            trigger.classList.remove('active');
+            if (parentTr) parentTr.classList.remove('active-history-parent');
+            wrapper.style.maxHeight = "0";
+            setTimeout(() => {
+                if (!trigger.classList.contains('active')) {
+                    historyRow.classList.add('d-none');
+                }
+            }, 350);
+        }
+    });
+
     // Arama
     document.getElementById('aramaInput')?.addEventListener('input', function () {
         const q = this.value.toLowerCase();
-        document.querySelectorAll('#basvuruTablosu tbody tr').forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+        document.querySelectorAll('#basvuruTablosu tbody tr:not(.history-row)').forEach(row => {
+            const isMatch = row.textContent.toLowerCase().includes(q);
+            row.style.display = isMatch ? '' : 'none';
+
+            // Eğer ana satır gizleniyorsa, açık olan geçmiş başvuru satırını da kapat ve gizle
+            if (!isMatch) {
+                const trigger = row.querySelector('.history-trigger');
+                if (trigger && trigger.classList.contains('active')) {
+                    const basvuruId = trigger.getAttribute('data-basvuru-id');
+                    const historyRow = document.getElementById(`history-row-${basvuruId}`);
+                    if (historyRow) {
+                        trigger.classList.remove('active');
+                        row.classList.remove('active-history-parent');
+                        const wrapper = historyRow.querySelector('.history-expand-wrapper');
+                        if (wrapper) wrapper.style.maxHeight = "0";
+                        historyRow.classList.add('d-none');
+                    }
+                }
+            }
+        });
+    });
+
+    // Sıralama
+    let sortAsc = false;
+    document.getElementById('sortDate')?.addEventListener('click', function () {
+        const table = document.getElementById('basvuruTablosu');
+        const tbody = table.querySelector('tbody');
+        const mainRows = Array.from(tbody.querySelectorAll('tr:not(.history-row)'));
+        const icon = this.querySelector('i');
+
+        sortAsc = !sortAsc;
+
+        // İkonu güncelle
+        icon.className = sortAsc ? 'bi bi-arrow-up small ms-1 text-primary' : 'bi bi-arrow-down small ms-1 text-primary';
+
+        mainRows.sort((a, b) => {
+            // Tarih hücresindeki ilk span'i bul (Kalan süre span'ini dahil etme)
+            const dateSpanA = a.querySelector('td:nth-child(3) span:first-child');
+            const dateSpanB = b.querySelector('td:nth-child(3) span:first-child');
+
+            const dateA = dateSpanA ? dateSpanA.textContent.trim() : '';
+            const dateB = dateSpanB ? dateSpanB.textContent.trim() : '';
+
+            if (dateA === '-' || !dateA) return 1;
+            if (dateB === '-' || !dateB) return -1;
+
+            // DD.MM.YYYY -> YYYYMMDD
+            const partsA = dateA.split('.');
+            const partsB = dateB.split('.');
+
+            const valA = (partsA[2] || '0') + (partsA[1] || '0').padStart(2, '0') + (partsA[0] || '0').padStart(2, '0');
+            const valB = (partsB[2] || '0') + (partsB[1] || '0').padStart(2, '0') + (partsB[0] || '0').padStart(2, '0');
+
+            return sortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+        });
+
+        mainRows.forEach((row, index) => {
+            tbody.appendChild(row);
+
+            // Sıra numarasını güncelle (İlk sütun)
+            const indexCell = row.querySelector('td:first-child');
+            if (indexCell) indexCell.textContent = index + 1;
+
+            // Eğer bu satırın bir history satırı varsa, onu da hemen peşine taşı
+            const trigger = row.querySelector('.history-trigger');
+            if (trigger) {
+                const basvuruId = trigger.getAttribute('data-basvuru-id');
+                const historyRow = document.getElementById(`history-row-${basvuruId}`);
+                if (historyRow) {
+                    tbody.appendChild(historyRow);
+                }
+            }
         });
     });
 </script>

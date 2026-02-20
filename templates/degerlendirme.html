@@ -3,920 +3,1093 @@
 
 {% block content %}
 
-<!-- Print Header (Visible only when printing) -->
-<div class="print-header d-none">
-    <h1>ARAŞTIRMA İZNİ EKSİKLİK BİLDİRİM RAPORU</h1>
-    <p>T.C. MİLLİ EĞİTİM BAKANLIĞI</p>
-    <p>Başvuru No: {{ basvuru.basvuru_no }} | Tarih: {{ basvuru.olusturma_tarihi.strftime('%d.%m.%Y') if
-        basvuru.olusturma_tarihi else '-' }}</p>
-    <p>Araştırmacı: {{ basvuru.ad_soyad }}</p>
-</div>
-
-<form action="{{ url_for('degerlendirme_kaydet', id=basvuru.id) }}" method="POST" id="degerlendirmeForm">
-    <input type="hidden" name="action" id="formAction" value="kaydet">
-
-    <!-- Üst Bar: Geri + Yazdır + Kaydet -->
-    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
-        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i>Listeye Dön
-        </a>
-        {% set status_text = basvuru|kompleks_durum_metni %}
-        {% set status_class = basvuru.degerlendirme_durumu|durum_renk %}
-        <span class="badge bg-{{ status_class }}-subtle text-{{ status_class }} fs-6 py-2 px-3 shadow-sm"
-            id="mainStatusBadge">
-            <i class="bi {{ basvuru.degerlendirme_durumu|durum_ikon }} me-1"></i>
-            {{ status_text }}
-        </span>
-        <button type="button" class="btn btn-outline-secondary btn-lg px-3" onclick="window.print()" title="Yazdır">
-            <i class="bi bi-printer me-1"></i>Yazdır
-        </button>
-        <button type="submit" class="btn btn-success btn-lg px-4"
-            onclick="document.getElementById('formAction').value='kaydet'">
-            <i class="bi bi-save me-1"></i>Kaydet
-        </button>
+<!-- Print Report (Visible only when printing) -->
+<div class="print-only">
+    <div class="print-report-header">
+        <h1>ARAŞTIRMA İZNİ DEĞERLENDİRME RAPORU</h1>
+        <h2>T.C. KAYSERİ VALİLİĞİ | İL MİLLİ EĞİTİM MÜDÜRLÜĞÜ</h2>
+        <p>Rapor Tarihi: {{ basvuru.olusturma_tarihi.strftime('%d.%m.%Y') if basvuru.olusturma_tarihi else '-' }}</p>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════════ -->
-    <!-- BÖLÜM 1: BAŞVURU BİLGİLERİ                                       -->
-    <!-- ═══════════════════════════════════════════════════════════════════ -->
-    <div class="card glass-card mb-4">
-        <div class="card-header section-header section-header--blue">
-            <h5 class="mb-0"><i class="bi bi-person-badge me-2"></i>Başvuru Bilgileri</h5>
+    <!-- 1. Başvuru Bilgileri -->
+    <div class="report-section-title">BAŞVURU BİLGİLERİ</div>
+    <div class="info-grid">
+        <div class="info-box">
+            <span class="info-box-label">Başvuru No</span>
+            <span class="info-box-value">{{ basvuru.basvuru_no }}</span>
         </div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <div class="info-item">
-                        <span class="info-label">Başvuru No</span>
-                        <span class="info-value fw-bold text-primary">{{ basvuru.basvuru_no }}</span>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="info-item">
-                        <span class="info-label">Başvuru Tarihi</span>
-                        <span class="info-value">{{ basvuru.basvuru_tarihi or '-' }}</span>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="info-item">
-                        <span class="info-label">Uygulama Yapılacak Kurum Türü</span>
-                        <span class="info-value">{{ basvuru.teskilat_turu or '-' }}</span>
-                    </div>
-                </div>
-                <div class="col-12">
-                    <div class="info-item">
-                        <span class="info-label">Araştırmanın Adı</span>
-                        <span class="info-value">{{ basvuru.arastirma_adi or '-' }}</span>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="info-item">
-                        <span class="info-label">Niteliği</span>
-                        <span class="info-value">{{ basvuru.arastirma_niteligi or '-' }}</span>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="info-item">
-                        <span class="info-label">Araştırmacı</span>
-                        <span class="info-value">{{ basvuru.ad_soyad or '-' }}</span>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="info-item">
-                        <span class="info-label">TC Kimlik No</span>
-                        <span class="info-value">{{ basvuru.tc_kimlik or '-' }}</span>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="info-item">
-                        <span class="info-label">Telefon</span>
-                        <span class="info-value">{{ basvuru.telefon or '-' }}</span>
-                    </div>
-                </div>
-            </div>
+        <div class="info-box">
+            <span class="info-box-label">Başvuru Tarihi</span>
+            <span class="info-box-value">{{ basvuru.basvuru_tarihi or '-' }}</span>
+        </div>
+        <div class="info-box">
+            <span class="info-box-label">Araştırmacı</span>
+            <span class="info-box-value">{{ basvuru.ad_soyad }}</span>
+        </div>
+    </div>
+    <div class="info-box mb-3">
+        <span class="info-box-label">Araştırmanın Adı</span>
+        <span class="info-box-value">{{ basvuru.arastirma_adi or '-' }}</span>
+    </div>
+    <div class="info-box mb-3">
+        <span class="info-box-label">Uygulama Süresi</span>
+        <span class="info-box-value">{{ basvuru.uygulama_suresi or '-' }}</span>
+    </div>
 
-            <!-- Belgeler -->
-            {% if belgeler %}
-            <hr class="my-3">
-            <h6 class="text-muted mb-3"><i class="bi bi-file-earmark-text me-1"></i>Yüklenen Belgeler</h6>
-            <div class="row g-2">
-                {% set belge_listesi = [
-                ('Araştırma Proje Bilgileri', belgeler.arastirma_proje),
-                ('Veri Toplama Aracı / Araçları', belgeler.veri_toplama),
-                ('Araştırma Uygulama İzni Başvuru Taahhütnamesi', belgeler.taahhutname),
-                ('Araştırma/Tıbbi Araştırmalar İçin Etik Kuruldan Alınan Onay Belgesi', belgeler.etik_kurul),
-                ('Ayrıntılı Bilgilendirme ve Gönüllü Katılım Formu', belgeler.gonullu_katilim),
-                ('Veli Onam Formu', belgeler.veli_onam),
-                ('Alanyazında Daha Önce Kullanılmış Veri Toplama Aracı Tercih Ediliyor İse Kullanıma İlişkin İzin',
-                belgeler.olcek_izni),
-                ('Enstitü Yönetim Kurulu Kararı', belgeler.enstitu_karari),
-                ] %}
-                {% for baslik, linkler in belge_listesi %}
-                {% if linkler %}
-                <div class="col-md-6 col-lg-4">
-                    <div class="belge-card h-100">
-                        <div class="d-flex align-items-start">
-                            {% if 'Araştırma Proje' in baslik %}
-                            <i class="bi bi-file-earmark-pdf text-primary me-2 fs-5"></i>
-                            {% elif 'Veri Toplama Aracı' in baslik %}
-                            <i class="bi bi-card-checklist text-success me-2 fs-5"></i>
-                            {% elif 'Taahhütname' in baslik %}
-                            <i class="bi bi-file-earmark-check text-success me-2 fs-5"></i>
-                            {% elif 'Etik Kurul' in baslik %}
-                            <i class="bi bi-shield-check text-warning me-2 fs-5"></i>
-                            {% elif 'Gönüllü Katılım' in baslik %}
-                            <i class="bi bi-person-check text-info me-2 fs-5"></i>
-                            {% elif 'Veli Onam' in baslik %}
-                            <i class="bi bi-people text-info me-2 fs-5"></i>
-                            {% elif 'İzin' in baslik %}
-                            <i class="bi bi-file-earmark-lock text-danger me-2 fs-5"></i>
-                            {% else %}
-                            <i class="bi bi-file-earmark-text text-secondary me-2 fs-5"></i>
-                            {% endif %}
-                            <div class="w-100">
-                                <div class="fw-bold text-dark mb-1" style="font-size: 0.85rem;">{{ baslik }}</div>
-                                {% for link in linkler %}
-                                <div class="mb-1 d-flex align-items-center">
-                                    <i class="bi bi-file-earmark-arrow-down text-muted small me-1"></i>
-                                    {% set doc_title = basvuru.ad_soyad + " - " + baslik + " - " + (link.clean_text
-                                    if
-                                    link.clean_text else link.text) %}
-                                    {% set final_url = url_for('proxy_belge', url=link.url, title=doc_title) if
-                                    (link.url.startswith('http') or not link.local_path)
-                                    else url_for('serve_doc', filename=link.local_path, title=doc_title) %}
-                                    <button type="button"
-                                        class="btn btn-link p-0 text-start text-decoration-none text-truncate flex-grow-1"
-                                        style="font-size: 0.8rem; max-width: 100%;"
-                                        title="{{ link.clean_text if link.clean_text else link.text }}"
-                                        onclick='belgeGoster({{ final_url|tojson }}, {{ (baslik + " - " + (link.clean_text if link.clean_text else link.text))|tojson }})'>
-                                        {{ link.clean_text if link.clean_text else link.text }}
-                                    </button>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-                {% endfor %}
-            </div>
+    <!-- 2. Değerlendirici Bilgileri -->
+    <div class="report-section-title">DEĞERLENDİRİCİ GÖRÜŞLERİ</div>
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>Değerlendirici</th>
+                <th>Karar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in atanmis_degerlendiriciler %}
+            {% set d_karar = basvuru.degerlendiriciler|selectattr('degerlendirici_adi', 'equalto',
+            d)|map(attribute='karar')|first %}
+            <tr>
+                <td>{{ d }}</td>
+                <td>
+                    {% if d_karar == 'ONAY' %}
+                    <span class="status-badge bg-success-subtle">ONAY</span>
+                    {% elif d_karar == 'RED' %}
+                    <span class="status-badge bg-danger-subtle">RED</span>
+                    {% else %}
+                    <span class="status-badge bg-warning-subtle">BEKLİYOR</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not atanmis_degerlendiriciler %}
+            <tr>
+                <td colspan="2" class="text-center text-muted">Henüz değerlendirici atanmamış.</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    <!-- 3. Ön Kontrol ve Kriter Özeti -->
+    <div class="report-section-title">KONTROL VE DEĞERLENDİRME ÖZETİ</div>
+    <table class="report-table deficient-only">
+        <thead>
+            <tr>
+                <th style="width: 45%;">Kontrol Maddesi / Kriter</th>
+                <th style="width: 15%; min-width: 120px; white-space: nowrap;">Durum</th>
+                <th style="width: 40%;">Açıklama / Gerekçe</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Ön Kontrol Maddeleri -->
+            {% for ok in on_kontroller %}
+            <tr class="{{ 'row-appropriate' if ok.durum != 'YOK' }}">
+                <td>{{ ok.madde_adi }}</td>
+                <td><span class="status-badge">EKSİK</span></td>
+                <td>{{ ok.aciklama or '-' }}</td>
+            </tr>
+            {% endfor %}
+
+            <!-- Kriterler -->
+            {% for k in kriterler %}
+            <tr class="{{ 'row-appropriate' if k.sonuc != 'UYGUN_DEGIL' }}">
+                <td>Kriter {{ k.no }}: {{ k.metin }}</td>
+                <td><span class="status-badge">UYGUN DEĞİL</span></td>
+                <td>{{ k.aciklama or '-' }}</td>
+            </tr>
+            {% endfor %}
+
+            {% set has_deficiencies = (on_kontroller|selectattr('durum', 'equalto', 'YOK')|list|length > 0) or
+            (kriterler|selectattr('sonuc', 'equalto', 'UYGUN_DEGIL')|list|length > 0) %}
+            {% if not has_deficiencies %}
+            <tr>
+                <td colspan="3" class="text-center fw-bold py-3 text-success">Tüm kontrol ve değerlendirme kriterleri
+                    UYGUNDUR.</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    <!-- 4. Koordinatör Kararı -->
+    <div class="report-section-title">KOORDİNATÖR KARARI</div>
+    <div class="decision-summary mb-3">
+        <div class="mb-2">
+            <strong>Karar:</strong>
+            {% if basvuru.koordinator_karari == 'ONAY' %}
+            <span class="status-badge bg-success text-white">ONAYLANDI (Yöneticiye Arz)</span>
+            {% elif basvuru.koordinator_karari == 'RED' %}
+            <span class="status-badge bg-danger text-white">REDDEDİLDİ (Yöneticiye Arz)</span>
+            {% else %}
+            <span class="status-badge bg-secondary text-white">KARAR VERİLMEDİ</span>
             {% endif %}
         </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════════════════════════════ -->
-    <!-- BÖLÜM 2: DEĞERLENDİRİCİ ATAMA                                    -->
-    <!-- ═══════════════════════════════════════════════════════════════════ -->
-    <div class="card glass-card mb-4">
-        <div class="card-header section-header section-header--purple">
-            <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Değerlendirici Atama <small class="opacity-75">(en
-                    fazla 2 kişi seçin)</small></h5>
-        </div>
-        <div class="card-body">
-            <div class="row g-3">
-                <style>
-                    .deg-karar-wrapper {
-                        display: none !important;
-                        transition: all 0.3s ease;
-                    }
-
-                    .deg-card--selected .deg-karar-wrapper {
-                        display: block !important;
-                        animation: fadeIn 0.3s;
-                    }
-
-                    @keyframes fadeIn {
-                        from {
-                            opacity: 0;
-                        }
-
-                        to {
-                            opacity: 1;
-                        }
-                    }
-                </style>
-                {% for d in degerlendiriciler %}
-                <div class="col-md-6 col-lg-3">
-                    <label class="deg-card {{ 'deg-card--selected' if d in atanmis_degerlendiriciler }}">
-                        <input type="checkbox" name="degerlendiriciler" value="{{ d }}" class="deg-checkbox"
-                            {{ 'checked' if d in atanmis_degerlendiriciler }}>
-                        <div class="deg-card-body">
-                            <i class="bi bi-person-circle deg-avatar"></i>
-                            <span class="deg-name">{{ d }}</span>
-                            <span
-                                class="deg-count badge bg-{{ 'danger' if is_yuku[d].toplam > 5 else 'warning' if is_yuku[d].toplam > 2 else 'success' }}-subtle text-{{ 'danger' if is_yuku[d].toplam > 5 else 'warning' if is_yuku[d].toplam > 2 else 'success' }}">
-                                30 Gün: {{ is_yuku[d].toplam_30_gun }}
-                            </span>
-
-                            <!-- Karar Seçimi (Sadece seçiliyse JS ile gösterilecek veya her zaman gösterip CSS ile) -->
-                            <div class="mt-2 text-center deg-karar-wrapper" onclick="event.preventDefault()">
-                                <select name="deg_karar_{{ d }}" class="form-select form-select-sm deg-karar-select"
-                                    style="font-size: 0.8rem;">
-                                    <option value="" {% if d not in atanmis_degerlendiriciler %}selected{% endif %}>
-                                        Karar Seçiniz...</option>
-                                    <option value="ONAY" {% if d in atanmis_degerlendiriciler and
-                                        basvuru.degerlendiriciler|selectattr('degerlendirici_adi', 'equalto' ,
-                                        d)|map(attribute='karar' )|first=='ONAY' %}selected{% endif %}>✅ Onayladı
-                                    </option>
-                                    <option value="RED" {% if d in atanmis_degerlendiriciler and
-                                        basvuru.degerlendiriciler|selectattr('degerlendirici_adi', 'equalto' ,
-                                        d)|map(attribute='karar' )|first=='RED' %}selected{% endif %}>❌ Reddetti
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
-                    </label>
-                </div>
-                {% endfor %}
-            </div>
-            <div id="degUyari" class="alert alert-warning mt-3 d-none py-2">
-                <i class="bi bi-exclamation-triangle me-1"></i>En fazla 2 değerlendirici seçebilirsiniz!
-            </div>
+        <div>
+            <strong>Koordinatör Notu:</strong>
+            <p class="mb-0 mt-1">{{ basvuru.koordinator_notu or 'Not girilmemiş.' }}</p>
         </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════════════════════ -->
-    <!-- BÖLÜM 3: ÖN KONTROL MADDELERİ                                    -->
-    <!-- ═══════════════════════════════════════════════════════════════════ -->
-    <div class="card glass-card mb-4">
-        <div
-            class="card-header section-header section-header--orange d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Ön Kontrol Maddeleri</h5>
-            <div class="no-print d-flex gap-2">
-                <button type="button" id="btnOnKontrolTemizle"
-                    class="btn btn-sm btn-outline-light text-white border-white">
-                    <i class="bi bi-x-circle me-1"></i>Tümünü Temizle
-                </button>
-                <button type="button" onclick="hazirlaWhatsappMesaji(true)"
-                    class="btn btn-sm btn-outline-light text-white border-white">
-                    <i class="bi bi-whatsapp me-1"></i>WhatsApp Önizleme
-                </button>
-                <button type="button" id="btnOnKontrolKaydet" class="btn btn-sm btn-light text-primary fw-bold"
-                    disabled>
-                    <i class="bi bi-save me-1"></i>Ön Kontrolü Kaydet
-                </button>
-            </div>
+    <!-- 5. İmzalar -->
+    <div class="signature-grid">
+        <div class="signature-item">
+            <div class="signature-title">Değerlendirici 1</div>
+            <div class="signature-name">{{ basvuru.degerlendiriciler[0].degerlendirici_adi if
+                basvuru.degerlendiriciler|length > 0 else '........................' }}</div>
+            <div class="signature-space"></div>
+            <div>İmza</div>
         </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" id="onKontrolTablosu">
-                    <thead>
-                        <tr>
-                            <th class="ps-4" style="width: 320px;">Madde</th>
-                            <th class="text-center" style="width: 80px;">VAR</th>
-                            <th class="text-center" style="width: 80px;">YOK</th>
-                            <th class="text-center" style="width: 80px;">N/A</th>
-                            <th>Açıklama</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for ok in on_kontroller %}
-                        <tr
-                            class="on-kontrol-row {{ 'on-kontrol-var' if ok.durum=='VAR' }}{{ 'on-kontrol-yok' if ok.durum=='YOK' }}{{ 'on-kontrol-na' if ok.durum=='N/A' }}">
-                            <td class="ps-4 fw-medium">{{ ok.madde_adi }}</td>
-                            <td class="text-center">
-                                <input type="radio" name="on_kontrol_durum_{{ ok.sira }}" value="VAR"
-                                    class="form-check-input radio-var" {{ 'checked' if ok.durum=='VAR' }}>
-                            </td>
-                            <td class="text-center">
-                                <input type="radio" name="on_kontrol_durum_{{ ok.sira }}" value="YOK"
-                                    class="form-check-input radio-yok" {{ 'checked' if ok.durum=='YOK' }}>
-                            </td>
-                            <td class="text-center">
-                                <input type="radio" name="on_kontrol_durum_{{ ok.sira }}" value="N/A"
-                                    class="form-check-input radio-na" {{ 'checked' if ok.durum=='N/A' }}>
-                            </td>
-                            <td>
-                                <input type="text" name="on_kontrol_aciklama_{{ ok.sira }}"
-                                    class="form-control form-control-sm aciklama-input" placeholder="Açıklama..."
-                                    value="{{ ok.aciklama or '' }}">
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+        <div class="signature-item">
+            <div class="signature-title">Değerlendirici 2</div>
+            <div class="signature-name">{{ basvuru.degerlendiriciler[1].degerlendirici_adi if
+                basvuru.degerlendiriciler|length > 1 else '........................' }}</div>
+            <div class="signature-space"></div>
+            <div>İmza</div>
         </div>
-    </div>
-
-    <!-- WhatsApp Özeti (Kaydetme sonrası görünür) -->
-    <div class="card glass-card mb-4 border-success animate__animated animate__fadeIn" id="whatsappPanel"
-        style="display: none;">
-        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-            <h6 class="mb-0"><i class="bi bi-whatsapp me-2"></i>Ön Kontrol Değerlendirme Özeti (WhatsApp)</h6>
-            <button type="button" class="btn btn-sm btn-light" onclick="whatsappKopyala()">
-                <i class="bi bi-clipboard me-1"></i>Metni Kopyala
-            </button>
+        {% if koordinatorler %}
+        {% for k in koordinatorler %}
+        <div class="signature-item">
+            <div class="signature-title">Koordinatör Onayı</div>
+            <div class="signature-name">{{ k.ad_soyad }}</div>
+            <div class="signature-space"></div>
+            <div>İmza</div>
         </div>
-        <div class="card-body bg-light">
-            <textarea id="whatsappIcerik" class="form-control bg-white shadow-sm" rows="12"
-                style="font-family: inherit; font-size: 0.9rem; line-height: 1.5; border: 1px solid #ced4da;"></textarea>
-        </div>
-        <div class="card-footer py-2">
-            <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Bu metni kopyalayıp araştırmacıya
-                WhatsApp
-                üzerinden iletebilirsiniz.</small>
-        </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════════════════════════════ -->
-    <!-- BÖLÜM 4: KRİTERLER (30 Madde)                                    -->
-    <!-- ═══════════════════════════════════════════════════════════════════ -->
-    <div class="card glass-card mb-4">
-        <div class="card-header section-header section-header--green d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="bi bi-check2-square me-2"></i>Değerlendirme Kriterleri</h5>
-            <div class="d-flex gap-2 no-print">
-                <button type="button" class="btn btn-sm btn-outline-light" id="tumunuUygun">
-                    <i class="bi bi-check-all me-1"></i>Tümünü Uygun
-                </button>
-                <button type="button" class="btn btn-sm btn-outline-light" id="tumunuTemizle">
-                    <i class="bi bi-eraser me-1"></i>Temizle
-                </button>
-            </div>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" id="kriterTablosu">
-                    <thead>
-                        <tr>
-                            <th class="ps-4 text-center" style="width: 60px;">No</th>
-                            <th>Kriter</th>
-                            <th class="text-center" style="width: 150px;">Uygun Değil</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for k in kriterler %}
-                        <tr class="kriter-row {{ 'kriter-uygun' if k.sonuc == 'UYGUN' }}{{ 'kriter-uygun-degil' if k.sonuc == 'UYGUN_DEGIL' }}"
-                            data-kriter-no="{{ k.no }}">
-                            <td class="ps-4 text-center">
-                                <span class="kriter-no">{{ k.no }}</span>
-                            </td>
-                            <td class="kriter-metin">{{ k.metin }}</td>
-                            <td class="text-center">
-                                <input type="hidden" name="kriter_sonuc_{{ k.no }}" id="hidden_kriter_{{ k.no }}"
-                                    value="{{ k.sonuc if k.sonuc in ['UYGUN', 'UYGUN_DEGIL'] else 'UYGUN' }}">
-                                <div class="form-check d-flex justify-content-center">
-                                    <input class="form-check-input kriter-check" type="checkbox"
-                                        data-target="hidden_kriter_{{ k.no }}" value="UYGUN_DEGIL" {{ 'checked' if
-                                        k.sonuc=='UYGUN_DEGIL' }}>
-                                </div>
-                            </td>
-                        </tr>
-                        <!-- Açıklama satırı (Uygun Değil seçilince açılır) -->
-                        <tr class="kriter-aciklama-row {{ 'show' if k.sonuc == 'UYGUN_DEGIL' }}"
-                            data-aciklama-for="{{ k.no }}">
-                            <td></td>
-                            <td colspan="3">
-                                <div class="d-flex align-items-start gap-2">
-                                    <i class="bi bi-chat-left-text text-danger mt-1"></i>
-                                    <textarea name="kriter_aciklama_{{ k.no }}" rows="2"
-                                        class="form-control form-control-sm kriter-aciklama-input"
-                                        placeholder="Uygun değil gerekçesini yazın...">{{ k.aciklama or '' }}</textarea>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════════════════════════════ -->
-    <!-- BÖLÜM 5: UYGUN DEĞİL ÖZETİ                                      -->
-    <!-- ═══════════════════════════════════════════════════════════════════ -->
-    <div class="card ozet-card mb-4" id="ozetKart" style="display: none;">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Uygun Değil Özeti
-                <span class="badge bg-light text-danger ms-2" id="ozetSayac">0</span>
-            </h5>
-        </div>
-        <div class="card-body" id="ozetIcerik">
-            <!-- JS ile doldurulacak -->
-        </div>
-    </div>
-
-    <!-- ═══════════════════════════════════════════════════════════════════ -->
-    <!-- BÖLÜM 6: YÖNETİCİ & KOORDİNATÖR İŞLEMLERİ (Duruma Göre)          -->
-    <!-- ═══════════════════════════════════════════════════════════════════ -->
-
-    <!-- ═══════════════════════════════════════════════════════════════════ -->
-    <!-- BÖLÜM 6: KOORDİNATÖR DEĞERLENDİRMESİ & İŞLEM                       -->
-    <!-- ═══════════════════════════════════════════════════════════════════ -->
-
-    <!-- STANDART DEĞERLENDİRME BUTONLARI (Sadece diğer durumlar hariçse) -->
-    {% if basvuru.degerlendirme_durumu != 'yonetici_onayinda' and basvuru.degerlendirme_durumu != 'okul_secimi' %}
-
-    <div class="card glass-card mb-5 border-info">
-        <div class="card-header bg-info-subtle text-info-emphasis">
-            <h5 class="mb-0"><i class="bi bi-person-check-fill me-2"></i>Koordinatör Değerlendirmesi</h5>
-        </div>
-        <div class="card-body">
-            <div class="row mb-3">
-                <div class="col-md-12">
-                    <label class="form-label fw-bold">Kararınız:</label>
-                    <div class="d-flex gap-4">
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="koordinator_karari" id="kararOnay"
-                                value="ONAY" {{ 'checked' if basvuru.koordinator_karari=='ONAY' }}>
-                            <label class="form-check-label text-success fw-bold" for="kararOnay">
-                                <i class="bi bi-check-circle-fill me-1"></i>Onay (Yöneticiye Arz)
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="koordinator_karari" id="kararRed"
-                                value="RED" {{ 'checked' if basvuru.koordinator_karari=='RED' }}>
-                            <label class="form-check-label text-danger fw-bold" for="kararRed">
-                                <i class="bi bi-x-circle-fill me-1"></i>Red (Yöneticiye Arz)
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mb-4">
-                    <label class="form-label fw-bold">Koordinatör Notu (Opsiyonel):</label>
-                    <textarea name="koordinator_notu" class="form-control" rows="2"
-                        placeholder="Yöneticiye iletmek istediğiniz notlar...">{{ basvuru.koordinator_notu or '' }}</textarea>
-                </div>
-
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <button type="button" class="btn btn-outline-secondary btn-lg px-4 me-2"
-                            onclick="window.print()">
-                            <i class="bi bi-printer me-2"></i>Yazdır
-                        </button>
-                        <button type="submit" class="btn btn-secondary btn-lg px-4" name="action" value="kaydet">
-                            <i class="bi bi-save me-2"></i>Taslak Kaydet
-                        </button>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary btn-lg px-5"
-                        onclick="document.getElementById('formAction').value='yoneticiye_gonder'; return confirm('Başvuruyu seçilen kararla YÖNETİCİ ONAYINA göndermek istediğinizden emin misiniz?')">
-                        <i class="bi bi-send-check me-2"></i>KAYDET VE YÖNETİCİYE GÖNDER
-                    </button>
-                </div>
-            </div>
+        {% endfor %}
+        {% else %}
+        <div class="signature-item">
+            <div class="signature-title">Koordinatör Onayı</div>
+            <div class="signature-name">....................................</div>
+            <div class="signature-space"></div>
+            <div>İmza</div>
         </div>
         {% endif %}
 
-        <!-- Print Footer (Visible only when printing) -->
-        <div class="print-footer d-none">
-            <div class="sig-box">
-                <p><strong>Değerlendirici 1</strong></p>
-                <p>{{ basvuru.degerlendiriciler[0].degerlendirici_adi if basvuru.degerlendiriciler|length > 0 else
-                    '........................' }}</p>
-                <br><br>
-                <p>İmza</p>
-            </div>
-            <div class="sig-box">
-                <p><strong>Değerlendirici 2</strong></p>
-                <p>{{ basvuru.degerlendiriciler[1].degerlendirici_adi if basvuru.degerlendiriciler|length > 1 else
-                    '........................' }}</p>
-                <br><br>
-                <p>İmza</p>
-            </div>
+        {% if yoneticiler %}
+        {% for y in yoneticiler %}
+        <div class="signature-item">
+            <div class="signature-title">Yönetici Onayı</div>
+            <div class="signature-name">{{ y.ad_soyad }}</div>
+            <div class="signature-space"></div>
+            <div>İmza / Mühür</div>
         </div>
-</form>
-
-<!-- YÖNETİCİ & KOORDİNATÖR İŞLEMLERİ (Form Dışı - Burada) -->
-{% if basvuru.degerlendirme_durumu == 'yonetici_onayinda' %}
-<div class="card glass-card mb-4 border-warning">
-    <div class="card-header bg-warning-subtle text-warning-dark">
-        <h5 class="mb-0"><i class="bi bi-person-badge-fill me-2"></i>Yönetici Kararı</h5>
-    </div>
-    <div class="card-body">
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle me-1"></i>Bu başvuru değerlendirici süreçlerinden geçmiş ve yönetici onayına
-            sunulmuştur.
+        {% endfor %}
+        {% else %}
+        <div class="signature-item">
+            <div class="signature-title">Yönetici Onayı</div>
+            <div class="signature-name">....................................</div>
+            <div class="signature-space"></div>
+            <div>İmza / Mühür</div>
         </div>
-        <form action="{{ url_for('yonetici_karar', id=basvuru.id) }}" method="POST">
-            <div class="mb-3">
-                <label class="form-label fw-bold">Yönetici Notu / Gerekçesi:</label>
-                <textarea name="yonetici_notu" class="form-control" rows="3"
-                    placeholder="Onay veya ret gerekçenizi buraya yazabilirsiniz..."></textarea>
-            </div>
-            <div class="d-flex gap-3">
-                <button type="submit" name="action" value="reddet" class="btn btn-danger btn-lg flex-grow-1"
-                    onclick="return confirm('Yönetici olarak bu başvuruyu REDDETMEK istediğinize emin misiniz?')">
-                    <i class="bi bi-x-circle me-1"></i>YÖNETİCİ REDDETTİ
-                </button>
-                <button type="submit" name="action" value="onayla" class="btn btn-success btn-lg flex-grow-1"
-                    onclick="return confirm('Yönetici olarak bu başvuruyu ONAYLAMAK istediğinize emin misiniz? Sonraki adımda okul seçimi yapılacaktır.')">
-                    <i class="bi bi-check-circle-fill me-1"></i>YÖNETİCİ ONAYLADI
-                </button>
-            </div>
-        </form>
+        {% endif %}
     </div>
 </div>
-{% elif basvuru.degerlendirme_durumu == 'okul_secimi' %}
-<div class="card glass-card mb-4 border-primary">
-    <div class="card-header bg-primary-subtle text-primary">
-        <h5 class="mb-0"><i class="bi bi-building-check me-2"></i>Okul / Kurum Seçimi</h5>
-    </div>
-    <div class="card-body">
-        <div class="alert alert-success">
-            <i class="bi bi-check-circle-fill me-1"></i>Yönetici onayı alınmıştır. Lütfen uygulamanın yapılacağı
-            okulu/kurumu seçerek süreci tamamlayın.
-        </div>
-        <div class="mb-3">
-            <label class="form-label fw-bold">Yönetici Notu:</label>
-            <div class="p-3 bg-light rounded border">
-                {{ basvuru.yonetici_notu or 'Not girilmemiş.' }}
-            </div>
-        </div>
-        <form action="{{ url_for('okul_secimi_kaydet', id=basvuru.id) }}" method="POST">
-            <div class="mb-3">
-                <label class="form-label fw-bold">Uygulama Yapılacak Okul / Kurum Adı:</label>
-                <input type="text" name="secilen_okul" class="form-control form-control-lg" required
-                    placeholder="Örn: Kocasinan Anadolu Lisesi">
-                <div class="form-text">Bu bilgi resmi yazıda kullanılacaktır.</div>
-            </div>
-            <button type="submit" class="btn btn-primary btn-lg w-100">
-                <i class="bi bi-check-circle-fill me-1"></i>OKUL / KURUM SEÇİMİNİ KAYDET
+
+<div class="screen-only">
+
+    <form action="{{ url_for('degerlendirme_kaydet', id=basvuru.id) }}" method="POST" id="degerlendirmeForm">
+        <input type="hidden" name="action" id="formAction" value="kaydet">
+
+        <!-- Üst Bar: Geri + Yazdır + Kaydet -->
+        <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Listeye Dön
+            </a>
+            {% set status_text = basvuru|kompleks_durum_metni %}
+            {% set status_class = basvuru.degerlendirme_durumu|durum_renk %}
+            <span class="badge bg-{{ status_class }}-subtle text-{{ status_class }} fs-6 py-2 px-3 shadow-sm"
+                id="mainStatusBadge">
+                <i class="bi {{ basvuru.degerlendirme_durumu|durum_ikon }} me-1"></i>
+                {{ status_text }}
+            </span>
+            <button type="button" class="btn btn-outline-secondary btn-lg px-3" onclick="window.print()" title="Yazdır">
+                <i class="bi bi-printer me-1"></i>Yazdır
             </button>
-        </form>
-    </div>
-</div>
-{% endif %}
+            <button type="submit" class="btn btn-success btn-lg px-4"
+                onclick="document.getElementById('formAction').value='kaydet'">
+                <i class="bi bi-save me-1"></i>Kaydet
+            </button>
+        </div>
 
-<!-- Belge Görüntüleme Modalı -->
-<div class="modal fade" id="belgeModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content glass-card border-0">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title" id="belgeModalLabel">Belge Görüntüle</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- BÖLÜM 1: BAŞVURU BİLGİLERİ                                       -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="card glass-card mb-4">
+            <div class="card-header section-header section-header--blue">
+                <h5 class="mb-0"><i class="bi bi-person-badge me-2"></i>Başvuru Bilgileri</h5>
             </div>
-            <div class="modal-body">
-                <div class="ratio ratio-16x9" style="min-height: 70vh;">
-                    <iframe id="belgeIframe" src="" frameborder="0"></iframe>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="info-item">
+                            <span class="info-label">Başvuru No</span>
+                            <span class="info-value fw-bold text-primary">{{ basvuru.basvuru_no }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="info-item">
+                            <span class="info-label">Başvuru Tarihi</span>
+                            <span class="info-value">{{ basvuru.basvuru_tarihi or '-' }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="info-item">
+                            <span class="info-label">Uygulama Yapılacak Kurum Türü</span>
+                            <span class="info-value">{{ basvuru.teskilat_turu or '-' }}</span>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="info-item">
+                            <span class="info-label">Araştırmanın Adı</span>
+                            <span class="info-value">{{ basvuru.arastirma_adi or '-' }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-item">
+                            <span class="info-label">Niteliği</span>
+                            <span class="info-value">{{ basvuru.arastirma_niteligi or '-' }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-item">
+                            <span class="info-label">Araştırmacı</span>
+                            <span class="info-value">{{ basvuru.ad_soyad or '-' }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-item">
+                            <span class="info-label">TC Kimlik No</span>
+                            <span class="info-value">{{ basvuru.tc_kimlik or '-' }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-item">
+                            <span class="info-label">Telefon</span>
+                            <span class="info-value">{{ basvuru.telefon or '-' }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-item">
+                            <span class="info-label">Uygulama Süresi</span>
+                            <span class="info-value text-danger fw-bold">{{ basvuru.uygulama_suresi or '-' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Belgeler -->
+                {% if belgeler %}
+                <hr class="my-3">
+                <h6 class="text-muted mb-3"><i class="bi bi-file-earmark-text me-1"></i>Yüklenen Belgeler</h6>
+                <div class="row g-2">
+                    {% set belge_listesi = [
+                    ('Araştırma Proje Bilgileri', belgeler.arastirma_proje),
+                    ('Veri Toplama Aracı / Araçları', belgeler.veri_toplama),
+                    ('Araştırma Uygulama İzni Başvuru Taahhütnamesi', belgeler.taahhutname),
+                    ('Araştırma/Tıbbi Araştırmalar İçin Etik Kuruldan Alınan Onay Belgesi', belgeler.etik_kurul),
+                    ('Ayrıntılı Bilgilendirme ve Gönüllü Katılım Formu', belgeler.gonullu_katilim),
+                    ('Veli Onam Formu', belgeler.veli_onam),
+                    ('Alanyazında Daha Önce Kullanılmış Veri Toplama Aracı Tercih Ediliyor İse Kullanıma İlişkin İzin',
+                    belgeler.olcek_izni),
+                    ('Enstitü Yönetim Kurulu Kararı', belgeler.enstitu_karari),
+                    ] %}
+                    {% for baslik, linkler in belge_listesi %}
+                    {% if linkler %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="belge-card h-100">
+                            <div class="d-flex align-items-start">
+                                {% if 'Araştırma Proje' in baslik %}
+                                <i class="bi bi-file-earmark-pdf text-primary me-2 fs-5"></i>
+                                {% elif 'Veri Toplama Aracı' in baslik %}
+                                <i class="bi bi-card-checklist text-success me-2 fs-5"></i>
+                                {% elif 'Taahhütname' in baslik %}
+                                <i class="bi bi-file-earmark-check text-success me-2 fs-5"></i>
+                                {% elif 'Etik Kurul' in baslik %}
+                                <i class="bi bi-shield-check text-warning me-2 fs-5"></i>
+                                {% elif 'Gönüllü Katılım' in baslik %}
+                                <i class="bi bi-person-check text-info me-2 fs-5"></i>
+                                {% elif 'Veli Onam' in baslik %}
+                                <i class="bi bi-people text-info me-2 fs-5"></i>
+                                {% elif 'İzin' in baslik %}
+                                <i class="bi bi-file-earmark-lock text-danger me-2 fs-5"></i>
+                                {% else %}
+                                <i class="bi bi-file-earmark-text text-secondary me-2 fs-5"></i>
+                                {% endif %}
+                                <div class="w-100">
+                                    <div class="fw-bold text-dark mb-1" style="font-size: 0.85rem;">{{ baslik }}</div>
+                                    {% for link in linkler %}
+                                    <div class="mb-1 d-flex align-items-center">
+                                        <i class="bi bi-file-earmark-arrow-down text-muted small me-1"></i>
+                                        {% set doc_title = basvuru.ad_soyad + " - " + baslik + " - " + (link.clean_text
+                                        if
+                                        link.clean_text else link.text) %}
+                                        {% set final_url = url_for('proxy_belge', url=link.url, title=doc_title) if
+                                        (link.url.startswith('http') or not link.local_path)
+                                        else url_for('serve_doc', filename=link.local_path, title=doc_title) %}
+                                        <button type="button"
+                                            class="btn btn-link p-0 text-start text-decoration-none text-truncate flex-grow-1"
+                                            style="font-size: 0.8rem; max-width: 100%;"
+                                            title="{{ link.clean_text if link.clean_text else link.text }}"
+                                            onclick='belgeGoster({{ final_url|tojson }}, {{ (baslik + " - " + (link.clean_text if link.clean_text else link.text))|tojson }})'>
+                                            {{ link.clean_text if link.clean_text else link.text }}
+                                        </button>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- BÖLÜM 2: DEĞERLENDİRİCİ ATAMA                                    -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="card glass-card mb-4">
+            <div class="card-header section-header section-header--purple">
+                <h5 class="mb-0"><i class="bi bi-people-fill me-2"></i>Değerlendirici Atama <small
+                        class="opacity-75">(en
+                        fazla 2 kişi seçin)</small></h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <style>
+                        .deg-karar-wrapper {
+                            display: none !important;
+                            transition: all 0.3s ease;
+                        }
+
+                        .deg-card--selected .deg-karar-wrapper {
+                            display: block !important;
+                            animation: fadeIn 0.3s;
+                        }
+
+                        @keyframes fadeIn {
+                            from {
+                                opacity: 0;
+                            }
+
+                            to {
+                                opacity: 1;
+                            }
+                        }
+                    </style>
+                    {% for d in degerlendiriciler %}
+                    <div class="col-md-6 col-lg-3">
+                        <label class="deg-card {{ 'deg-card--selected' if d in atanmis_degerlendiriciler }}">
+                            <input type="checkbox" name="degerlendiriciler" value="{{ d }}" class="deg-checkbox"
+                                {{ 'checked' if d in atanmis_degerlendiriciler }}>
+                            <div class="deg-card-body">
+                                <i class="bi bi-person-circle deg-avatar"></i>
+                                <span class="deg-name">{{ d }}</span>
+                                <span
+                                    class="deg-count badge bg-{{ 'danger' if is_yuku[d].toplam > 5 else 'warning' if is_yuku[d].toplam > 2 else 'success' }}-subtle text-{{ 'danger' if is_yuku[d].toplam > 5 else 'warning' if is_yuku[d].toplam > 2 else 'success' }}">
+                                    30 Gün: {{ is_yuku[d].toplam_30_gun }}
+                                </span>
+
+                                <!-- Karar Seçimi (Sadece seçiliyse JS ile gösterilecek veya her zaman gösterip CSS ile) -->
+                                <div class="mt-2 text-center deg-karar-wrapper" onclick="event.preventDefault()">
+                                    <select name="deg_karar_{{ d }}" class="form-select form-select-sm deg-karar-select"
+                                        style="font-size: 0.8rem;">
+                                        <option value="" {% if d not in atanmis_degerlendiriciler %}selected{% endif %}>
+                                            Karar Seçiniz...</option>
+                                        <option value="ONAY" {% if d in atanmis_degerlendiriciler and
+                                            basvuru.degerlendiriciler|selectattr('degerlendirici_adi', 'equalto' ,
+                                            d)|map(attribute='karar' )|first=='ONAY' %}selected{% endif %}>✅ Onayladı
+                                        </option>
+                                        <option value="RED" {% if d in atanmis_degerlendiriciler and
+                                            basvuru.degerlendiriciler|selectattr('degerlendirici_adi', 'equalto' ,
+                                            d)|map(attribute='karar' )|first=='RED' %}selected{% endif %}>❌ Reddetti
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div id="degUyari" class="alert alert-warning mt-3 d-none py-2">
+                    <i class="bi bi-exclamation-triangle me-1"></i>En fazla 2 değerlendirici seçebilirsiniz!
                 </div>
             </div>
-            <div class="modal-footer border-0 pt-0">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
-                <a id="belgeYeniSekme" href="#" target="_blank" class="btn btn-primary">
-                    <i class="bi bi-box-arrow-up-right me-1"></i>Yeni Sekmede Aç
-                </a>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- BÖLÜM 3: ÖN KONTROL MADDELERİ                                    -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="card glass-card mb-4">
+            <div
+                class="card-header section-header section-header--orange d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Ön Kontrol Maddeleri</h5>
+                <div class="no-print d-flex gap-2">
+                    <button type="button" id="btnOnKontrolTemizle"
+                        class="btn btn-sm btn-outline-light text-white border-white">
+                        <i class="bi bi-x-circle me-1"></i>Tümünü Temizle
+                    </button>
+                    <button type="button" onclick="hazirlaWhatsappMesaji(true)"
+                        class="btn btn-sm btn-outline-light text-white border-white">
+                        <i class="bi bi-whatsapp me-1"></i>WhatsApp Önizleme
+                    </button>
+                    <button type="button" id="btnOnKontrolKaydet" class="btn btn-sm btn-light text-primary fw-bold"
+                        disabled>
+                        <i class="bi bi-save me-1"></i>Ön Kontrolü Kaydet
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="onKontrolTablosu">
+                        <thead>
+                            <tr>
+                                <th class="ps-4" style="width: 320px;">Madde</th>
+                                <th class="text-center" style="width: 80px;">VAR</th>
+                                <th class="text-center" style="width: 80px;">YOK</th>
+                                <th class="text-center" style="width: 140px;">GEREKLİ DEĞİL</th>
+                                <th>Açıklama</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ok in on_kontroller %}
+                            <tr
+                                class="on-kontrol-row {{ 'on-kontrol-var' if ok.durum=='VAR' }}{{ 'on-kontrol-yok' if ok.durum=='YOK' }}{{ 'on-kontrol-na' if ok.durum=='N/A' or ok.durum=='GEREKLİ DEĞİL' }}">
+                                <td class="ps-4 fw-medium">{{ ok.madde_adi }}</td>
+                                <td class="text-center">
+                                    <input type="radio" name="on_kontrol_durum_{{ ok.sira }}" value="VAR"
+                                        class="form-check-input radio-var" {{ 'checked' if ok.durum=='VAR' }}>
+                                </td>
+                                <td class="text-center">
+                                    <input type="radio" name="on_kontrol_durum_{{ ok.sira }}" value="YOK"
+                                        class="form-check-input radio-yok" {{ 'checked' if ok.durum=='YOK' }}>
+                                </td>
+                                <td class="text-center">
+                                    <input type="radio" name="on_kontrol_durum_{{ ok.sira }}" value="N/A"
+                                        class="form-check-input radio-na" {{ 'checked' if ok.durum=='N/A' or
+                                        ok.durum=='GEREKLİ DEĞİL' }}>
+                                </td>
+                                <td>
+                                    <input type="text" name="on_kontrol_aciklama_{{ ok.sira }}"
+                                        class="form-control form-control-sm aciklama-input" placeholder="Açıklama..."
+                                        value="{{ ok.aciklama or '' }}">
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- WhatsApp Özeti (Kaydetme sonrası görünür) -->
+        <div class="card glass-card mb-4 border-success animate__animated animate__fadeIn" id="whatsappPanel"
+            style="display: none;">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-whatsapp me-2"></i>Ön Kontrol Değerlendirme Özeti (WhatsApp)</h6>
+                <button type="button" class="btn btn-sm btn-light" onclick="whatsappKopyala()">
+                    <i class="bi bi-clipboard me-1"></i>Metni Kopyala
+                </button>
+            </div>
+            <div class="card-body bg-light">
+                <textarea id="whatsappIcerik" class="form-control bg-white shadow-sm" rows="12"
+                    style="font-family: inherit; font-size: 0.9rem; line-height: 1.5; border: 1px solid #ced4da;"></textarea>
+            </div>
+            <div class="card-footer py-2">
+                <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Bu metni kopyalayıp değerlendiricilere
+                    WhatsApp
+                    üzerinden iletebilirsiniz.</small>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- BÖLÜM 4: KRİTERLER (30 Madde)                                    -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="card glass-card mb-4">
+            <div
+                class="card-header section-header section-header--green d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-check2-square me-2"></i>Değerlendirme Kriterleri</h5>
+                <div class="d-flex gap-2 no-print">
+                    <button type="button" class="btn btn-sm btn-outline-light" id="tumunuUygun">
+                        <i class="bi bi-check-all me-1"></i>Tümünü Uygun
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-light" id="tumunuTemizle">
+                        <i class="bi bi-eraser me-1"></i>Temizle
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="kriterTablosu">
+                        <thead>
+                            <tr>
+                                <th class="ps-4 text-center" style="width: 60px;">No</th>
+                                <th>Kriter</th>
+                                <th class="text-center" style="width: 150px;">Uygun Değil</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for k in kriterler %}
+                            <tr class="kriter-row {{ 'kriter-uygun' if k.sonuc == 'UYGUN' }}{{ 'kriter-uygun-degil' if k.sonuc == 'UYGUN_DEGIL' }}"
+                                data-kriter-no="{{ k.no }}">
+                                <td class="ps-4 text-center">
+                                    <span class="kriter-no">{{ k.no }}</span>
+                                </td>
+                                <td class="kriter-metin">{{ k.metin }}</td>
+                                <td class="text-center">
+                                    <input type="hidden" name="kriter_sonuc_{{ k.no }}" id="hidden_kriter_{{ k.no }}"
+                                        value="{{ k.sonuc if k.sonuc in ['UYGUN', 'UYGUN_DEGIL'] else 'UYGUN' }}">
+                                    <div class="form-check d-flex justify-content-center">
+                                        <input class="form-check-input kriter-check" type="checkbox"
+                                            data-target="hidden_kriter_{{ k.no }}" value="UYGUN_DEGIL" {{ 'checked' if
+                                            k.sonuc=='UYGUN_DEGIL' }}>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Açıklama satırı (Uygun Değil seçilince açılır) -->
+                            <tr class="kriter-aciklama-row {{ 'show' if k.sonuc == 'UYGUN_DEGIL' }}"
+                                data-aciklama-for="{{ k.no }}">
+                                <td></td>
+                                <td colspan="3">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="bi bi-chat-left-text text-danger mt-1"></i>
+                                        <textarea name="kriter_aciklama_{{ k.no }}" rows="2"
+                                            class="form-control form-control-sm kriter-aciklama-input"
+                                            placeholder="Uygun değil gerekçesini yazın...">{{ k.aciklama or '' }}</textarea>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- BÖLÜM 5: UYGUN DEĞİL ÖZETİ                                      -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="card ozet-card mb-4" id="ozetKart" style="display: none;">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Uygun Değil Özeti
+                    <span class="badge bg-light text-danger ms-2" id="ozetSayac">0</span>
+                </h5>
+            </div>
+            <div class="card-body" id="ozetIcerik">
+                <!-- JS ile doldurulacak -->
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- BÖLÜM 6: YÖNETİCİ & KOORDİNATÖR İŞLEMLERİ (Duruma Göre)          -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- BÖLÜM 6: KOORDİNATÖR DEĞERLENDİRMESİ & İŞLEM                       -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+        <!-- STANDART DEĞERLENDİRME BUTONLARI (Sadece diğer durumlar hariçse) -->
+        {% if basvuru.degerlendirme_durumu != 'yonetici_onayinda' and basvuru.degerlendirme_durumu != 'okul_secimi' %}
+
+        <div class="card glass-card mb-5 border-info">
+            <div class="card-header bg-info-subtle text-info-emphasis">
+                <h5 class="mb-0"><i class="bi bi-person-check-fill me-2"></i>Koordinatör Değerlendirmesi</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold mb-3">Kararınız:</label>
+                        <div class="decision-group">
+                            <div class="decision-option decision-option--onay">
+                                <input class="decision-input" type="radio" name="koordinator_karari" id="kararOnay"
+                                    value="ONAY" {{ 'checked' if basvuru.koordinator_karari=='ONAY' }}>
+                                <label class="decision-label" for="kararOnay">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                    <span class="decision-title">ONAYLA</span>
+                                    <span class="decision-desc">Yönetici onayına sunar</span>
+                                </label>
+                            </div>
+                            <div class="decision-option decision-option--red">
+                                <input class="decision-input" type="radio" name="koordinator_karari" id="kararRed"
+                                    value="RED" {{ 'checked' if basvuru.koordinator_karari=='RED' }}>
+                                <label class="decision-label" for="kararRed">
+                                    <i class="bi bi-x-circle-fill"></i>
+                                    <span class="decision-title">REDDET</span>
+                                    <span class="decision-desc">Yönetici reddine sunar</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Koordinatör Notu (Opsiyonel):</label>
+                        <textarea name="koordinator_notu" class="form-control" rows="2"
+                            placeholder="Yöneticiye iletmek istediğiniz notlar...">{{ basvuru.koordinator_notu or '' }}</textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <button type="button" class="btn btn-outline-secondary btn-lg px-4 me-2"
+                                onclick="window.print()">
+                                <i class="bi bi-printer me-2"></i>Yazdır
+                            </button>
+                            <button type="submit" class="btn btn-secondary btn-lg px-4" name="action" value="kaydet">
+                                <i class="bi bi-save me-2"></i>Taslak Kaydet
+                            </button>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg px-5"
+                            onclick="document.getElementById('formAction').value='yoneticiye_gonder'; return confirm('Başvuruyu seçilen kararla YÖNETİCİ ONAYINA göndermek istediğinizden emin misiniz?')">
+                            <i class="bi bi-send-check me-2"></i>KAYDET VE YÖNETİCİYE GÖNDER
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </form>
+
+    <!-- YÖNETİCİ & KOORDİNATÖR İŞLEMLERİ (Form Dışı - Burada) -->
+    {% if basvuru.degerlendirme_durumu == 'yonetici_onayinda' %}
+    <div class="card glass-card mb-4 border-warning">
+        <div class="card-header bg-warning-subtle text-warning-dark">
+            <h5 class="mb-0"><i class="bi bi-person-badge-fill me-2"></i>Yönetici Kararı</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-1"></i>Bu başvuru değerlendirici süreçlerinden geçmiş ve yönetici onayına
+                sunulmuştur.
+            </div>
+            <form action="{{ url_for('yonetici_karar', id=basvuru.id) }}" method="POST">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Yönetici Notu / Gerekçesi:</label>
+                    <textarea name="yonetici_notu" class="form-control" rows="3"
+                        placeholder="Onay veya ret gerekçenizi buraya yazabilirsiniz..."></textarea>
+                </div>
+                <div class="d-flex gap-3">
+                    <button type="submit" name="action" value="reddet" class="btn btn-danger btn-lg flex-grow-1"
+                        onclick="return confirm('Yönetici olarak bu başvuruyu REDDETMEK istediğinize emin misiniz?')">
+                        <i class="bi bi-x-circle me-1"></i>YÖNETİCİ REDDETTİ
+                    </button>
+                    <button type="submit" name="action" value="onayla" class="btn btn-success btn-lg flex-grow-1"
+                        onclick="return confirm('Yönetici olarak bu başvuruyu ONAYLAMAK istediğinize emin misiniz? Sonraki adımda okul seçimi yapılacaktır.')">
+                        <i class="bi bi-check-circle-fill me-1"></i>YÖNETİCİ ONAYLADI
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% elif basvuru.degerlendirme_durumu == 'okul_secimi' %}
+    <div class="card glass-card mb-4 border-primary">
+        <div class="card-header bg-primary-subtle text-primary">
+            <h5 class="mb-0"><i class="bi bi-building-check me-2"></i>Okul / Kurum Seçimi</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-success">
+                <i class="bi bi-check-circle-fill me-1"></i>Yönetici onayı alınmıştır. Lütfen uygulamanın yapılacağı
+                okulu/kurumu seçerek süreci tamamlayın.
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Yönetici Notu:</label>
+                <div class="p-3 bg-light rounded border">
+                    {{ basvuru.yonetici_notu or 'Not girilmemiş.' }}
+                </div>
+            </div>
+            <form action="{{ url_for('okul_secimi_kaydet', id=basvuru.id) }}" method="POST">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Uygulama Yapılacak Okul / Kurum Adı:</label>
+                    <input type="text" name="secilen_okul" class="form-control form-control-lg" required
+                        placeholder="Örn: Kocasinan Anadolu Lisesi">
+                    <div class="form-text">Bu bilgi resmi yazıda kullanılacaktır.</div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg w-100">
+                    <i class="bi bi-check-circle-fill me-1"></i>OKUL / KURUM SEÇİMİNİ KAYDET
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    {% endblock %}
+
+    {% block modals %}
+    <!-- Belge Görüntüleme Modalı -->
+    <div class="modal fade" id="belgeModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold" id="belgeModalLabel">Belge Görüntüle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="ratio ratio-16x9" style="min-height: 75vh;">
+                        <iframe id="belgeIframe" src="" frameborder="0" class="rounded-bottom"></iframe>
+                    </div>
+                </div>
+                <div class="modal-footer border-top bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                    <a id="belgeYeniSekme" href="#" target="_blank" class="btn btn-primary">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>Yeni Sekmede Aç
+                    </a>
+                </div>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
+    {% endblock %}
 
-{% block scripts %}
-<script>
-    // ═══════════════════════════════════════════════════════════════
-    // Belge Görüntüleme (Pop-up)
-    // ═══════════════════════════════════════════════════════════════
-    const belgeModal = new bootstrap.Modal(document.getElementById('belgeModal'));
-    const belgeIframe = document.getElementById('belgeIframe');
-    const belgeModalLabel = document.getElementById('belgeModalLabel');
-    const belgeYeniSekme = document.getElementById('belgeYeniSekme');
+    {% block scripts %}
+    <script>
+        // ═══════════════════════════════════════════════════════════════
+        // Belge Görüntüleme (Pop-up)
+        // ═══════════════════════════════════════════════════════════════
+        const belgeModal = new bootstrap.Modal(document.getElementById('belgeModal'));
+        const belgeIframe = document.getElementById('belgeIframe');
+        const belgeModalLabel = document.getElementById('belgeModalLabel');
+        const belgeYeniSekme = document.getElementById('belgeYeniSekme');
 
-    function belgeGoster(url, baslik) {
-        belgeModalLabel.textContent = baslik;
-        belgeIframe.src = url;
-        belgeYeniSekme.href = url;
-        belgeModal.show();
-    }
-
-    // Modal kapandığında iframe'i temizle (bellek ve ses çalma vb. için)
-    document.getElementById('belgeModal').addEventListener('hidden.bs.modal', function () {
-        belgeIframe.src = '';
-    });
-
-    // ═══════════════════════════════════════════════════════════════
-    // Değerlendirici checkbox limiti (max 2)
-    // ═══════════════════════════════════════════════════════════════
-    const checkboxes = document.querySelectorAll('.deg-checkbox');
-    const uyari = document.getElementById('degUyari');
-
-    checkboxes.forEach(cb => {
-        cb.addEventListener('change', function () {
-            const checked = document.querySelectorAll('.deg-checkbox:checked');
-            if (checked.length > 2) {
-                this.checked = false;
-                uyari.classList.remove('d-none');
-                setTimeout(() => uyari.classList.add('d-none'), 3000);
-                return;
-            }
-            this.closest('.deg-card').classList.toggle('deg-card--selected', this.checked);
-        });
-    });
-
-    // Prevent select click from toggling checkbox
-    document.querySelectorAll('.deg-karar-select').forEach(select => {
-        select.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation(); // Stop bubbling to label
-        });
-        // Also need to handle mousedown to prevent radio/checkbox behavior on label
-        select.addEventListener('mousedown', function (e) {
-            e.stopPropagation();
-        });
-    });
-
-    // ═══════════════════════════════════════════════════════════════
-    // Radyo Buton Deselect (Tıklayınca Seçimi Kaldırabilme)
-    // ═══════════════════════════════════════════════════════════════
-    document.querySelectorAll('input[type="radio"]').forEach(radio => {
-        // Use mousedown to capture state before click
-        radio.addEventListener('mousedown', function () {
-            this.dataset.wasChecked = this.checked;
-        });
-
-        radio.addEventListener('click', function (e) {
-            if (this.dataset.wasChecked === 'true') {
-                this.checked = false;
-                this.dataset.wasChecked = 'false';
-                // Trigger change to update UI
-                this.dispatchEvent(new Event('change', { bubbles: true }));
-            } else {
-                // Reset other radios in group
-                document.querySelectorAll(`input[name="${this.name}"]`).forEach(r => r.dataset.wasChecked = 'false');
-                this.dataset.wasChecked = 'true';
-            }
-        });
-    });
-
-    // ═══════════════════════════════════════════════════════════════
-    // Ön Kontrol satır renklendirme
-    // ═══════════════════════════════════════════════════════════════
-    document.querySelectorAll('#onKontrolTablosu input[type="radio"]').forEach(radio => {
-        radio.addEventListener('change', function () {
-            const row = this.closest('tr');
-            row.classList.remove('on-kontrol-var', 'on-kontrol-yok', 'on-kontrol-na');
-
-            const aciklamaInput = row.querySelector('.aciklama-input, input[type="text"]');
-            if (this.checked) {
-                if (this.value === 'YOK') {
-                    row.classList.add('on-kontrol-yok');
-                    if (aciklamaInput) aciklamaInput.focus();
-                } else if (this.value === 'VAR') {
-                    row.classList.add('on-kontrol-var');
-                } else if (this.value === 'N/A') {
-                    row.classList.add('on-kontrol-na');
-                }
-            }
-            onKontrolDurumKontrol();
-        });
-    });
-
-    // ═══════════════════════════════════════════════════════════════
-    // Kriter Checkbox Mantığı
-    // ═══════════════════════════════════════════════════════════════
-    document.querySelectorAll('.kriter-check').forEach(checkbox => {
-        checkbox.addEventListener('change', function () {
-            const row = this.closest('tr');
-            const no = row.dataset.kriterNo;
-            const hiddenInput = document.getElementById(`hidden_kriter_${no}`);
-            const aciklamaRow = document.querySelector(`[data-aciklama-for="${no}"]`);
-            const aciklamaInput = aciklamaRow ? aciklamaRow.querySelector('textarea') : null;
-
-            if (this.checked) {
-                // UYGUN DEĞİL
-                if (hiddenInput) hiddenInput.value = 'UYGUN_DEGIL';
-                row.classList.remove('kriter-uygun');
-                row.classList.add('kriter-uygun-degil');
-                if (aciklamaRow) aciklamaRow.classList.add('show');
-                if (aciklamaInput) aciklamaInput.focus();
-            } else {
-                // UYGUN
-                if (hiddenInput) hiddenInput.value = 'UYGUN';
-                row.classList.remove('kriter-uygun-degil');
-                row.classList.add('kriter-uygun');
-                if (aciklamaRow) aciklamaRow.classList.remove('show');
-            }
-            ozetiGuncelle();
-        });
-    });
-
-    // ═══════════════════════════════════════════════════════════════
-    // Kriter Kontrol Butonları
-    // ═══════════════════════════════════════════════════════════════
-    document.getElementById('tumunuUygun')?.addEventListener('click', function () {
-        document.querySelectorAll('.kriter-check').forEach(cb => {
-            cb.checked = false;
-            cb.dispatchEvent(new Event('change'));
-        });
-    });
-
-    document.getElementById('tumunuTemizle')?.addEventListener('click', function () {
-        document.querySelectorAll('.kriter-check').forEach(cb => {
-            cb.checked = false;
-            const row = cb.closest('tr');
-            row.classList.remove('kriter-uygun', 'kriter-uygun-degil');
-            const no = row.dataset.kriterNo;
-            const aciklamaRow = document.querySelector(`[data-aciklama-for="${no}"]`);
-            if (aciklamaRow) aciklamaRow.classList.remove('show');
-            const hiddenInput = document.getElementById(`hidden_kriter_${no}`);
-            if (hiddenInput) hiddenInput.value = 'UYGUN';
-        });
-        ozetiGuncelle();
-    });
-
-    // ═══════════════════════════════════════════════════════════════
-    // Uygun Değil Özeti — dinamik güncelleme
-    // ═══════════════════════════════════════════════════════════════
-    function ozetiGuncelle() {
-        // We now check for checkboxes in Criteria section
-        const uygunDegilChecks = document.querySelectorAll('.kriter-check:checked');
-        const ozetKart = document.getElementById('ozetKart');
-        const ozetIcerik = document.getElementById('ozetIcerik');
-        const ozetSayac = document.getElementById('ozetSayac');
-
-        if (!ozetKart || !ozetIcerik || !ozetSayac) return;
-
-        if (uygunDegilChecks.length === 0) {
-            ozetKart.style.display = 'none';
-            return;
+        function belgeGoster(url, baslik) {
+            belgeModalLabel.textContent = baslik;
+            belgeIframe.src = url;
+            belgeYeniSekme.href = url;
+            belgeModal.show();
         }
 
-        ozetKart.style.display = 'block';
+        // Modal kapandığında iframe'i temizle (bellek ve ses çalma vb. için)
+        document.getElementById('belgeModal').addEventListener('hidden.bs.modal', function () {
+            belgeIframe.src = '';
+        });
 
-        const toplamKriter = document.querySelectorAll('.kriter-row').length;
-        ozetSayac.textContent = `${uygunDegilChecks.length} / ${toplamKriter}`;
+        // ═══════════════════════════════════════════════════════════════
+        // Değerlendirici checkbox limiti (max 2)
+        // ═══════════════════════════════════════════════════════════════
+        const checkboxes = document.querySelectorAll('.deg-checkbox');
+        const uyari = document.getElementById('degUyari');
 
-        let html = `<div class="mb-3">
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', function () {
+                const checked = document.querySelectorAll('.deg-checkbox:checked');
+                if (checked.length > 2) {
+                    this.checked = false;
+                    uyari.classList.remove('d-none');
+                    setTimeout(() => uyari.classList.add('d-none'), 3000);
+                    return;
+                }
+                this.closest('.deg-card').classList.toggle('deg-card--selected', this.checked);
+            });
+        });
+
+        // Prevent select click from toggling checkbox
+        document.querySelectorAll('.deg-karar-select').forEach(select => {
+            select.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation(); // Stop bubbling to label
+            });
+            // Also need to handle mousedown to prevent radio/checkbox behavior on label
+            select.addEventListener('mousedown', function (e) {
+                e.stopPropagation();
+            });
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        // Radyo Buton Deselect (Tıklayınca Seçimi Kaldırabilme)
+        // ═══════════════════════════════════════════════════════════════
+        document.querySelectorAll('input[type="radio"]').forEach(radio => {
+            // Use mousedown to capture state before click
+            radio.addEventListener('mousedown', function () {
+                this.dataset.wasChecked = this.checked;
+            });
+
+            radio.addEventListener('click', function (e) {
+                if (this.dataset.wasChecked === 'true') {
+                    this.checked = false;
+                    this.dataset.wasChecked = 'false';
+                    // Trigger change to update UI
+                    this.dispatchEvent(new Event('change', { bubbles: true }));
+                } else {
+                    // Reset other radios in group
+                    document.querySelectorAll(`input[name="${this.name}"]`).forEach(r => r.dataset.wasChecked = 'false');
+                    this.dataset.wasChecked = 'true';
+                }
+            });
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        // Ön Kontrol satır renklendirme
+        // ═══════════════════════════════════════════════════════════════
+        document.querySelectorAll('#onKontrolTablosu input[type="radio"]').forEach(radio => {
+            radio.addEventListener('change', function () {
+                const row = this.closest('tr');
+                row.classList.remove('on-kontrol-var', 'on-kontrol-yok', 'on-kontrol-na');
+
+                const aciklamaInput = row.querySelector('.aciklama-input, input[type="text"]');
+                if (this.checked) {
+                    if (this.value === 'YOK') {
+                        row.classList.add('on-kontrol-yok');
+                        if (aciklamaInput) aciklamaInput.focus();
+                    } else if (this.value === 'VAR') {
+                        row.classList.add('on-kontrol-var');
+                    } else if (this.value === 'N/A') {
+                        row.classList.add('on-kontrol-na');
+                    }
+                }
+                onKontrolDurumKontrol();
+            });
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        // Kriter Checkbox Mantığı
+        // ═══════════════════════════════════════════════════════════════
+        document.querySelectorAll('.kriter-check').forEach(checkbox => {
+            checkbox.addEventListener('change', function () {
+                const row = this.closest('tr');
+                const no = row.dataset.kriterNo;
+                const hiddenInput = document.getElementById(`hidden_kriter_${no}`);
+                const aciklamaRow = document.querySelector(`[data-aciklama-for="${no}"]`);
+                const aciklamaInput = aciklamaRow ? aciklamaRow.querySelector('textarea') : null;
+
+                if (this.checked) {
+                    // UYGUN DEĞİL
+                    if (hiddenInput) hiddenInput.value = 'UYGUN_DEGIL';
+                    row.classList.remove('kriter-uygun');
+                    row.classList.add('kriter-uygun-degil');
+                    if (aciklamaRow) aciklamaRow.classList.add('show');
+                    if (aciklamaInput) aciklamaInput.focus();
+                } else {
+                    // UYGUN
+                    if (hiddenInput) hiddenInput.value = 'UYGUN';
+                    row.classList.remove('kriter-uygun-degil');
+                    row.classList.add('kriter-uygun');
+                    if (aciklamaRow) aciklamaRow.classList.remove('show');
+                }
+                ozetiGuncelle();
+            });
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        // Kriter Kontrol Butonları
+        // ═══════════════════════════════════════════════════════════════
+        document.getElementById('tumunuUygun')?.addEventListener('click', function () {
+            document.querySelectorAll('.kriter-check').forEach(cb => {
+                cb.checked = false;
+                cb.dispatchEvent(new Event('change'));
+            });
+        });
+
+        document.getElementById('tumunuTemizle')?.addEventListener('click', function () {
+            document.querySelectorAll('.kriter-check').forEach(cb => {
+                cb.checked = false;
+                const row = cb.closest('tr');
+                row.classList.remove('kriter-uygun', 'kriter-uygun-degil');
+                const no = row.dataset.kriterNo;
+                const aciklamaRow = document.querySelector(`[data-aciklama-for="${no}"]`);
+                if (aciklamaRow) aciklamaRow.classList.remove('show');
+                const hiddenInput = document.getElementById(`hidden_kriter_${no}`);
+                if (hiddenInput) hiddenInput.value = 'UYGUN';
+            });
+            ozetiGuncelle();
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        // Uygun Değil Özeti — dinamik güncelleme
+        // ═══════════════════════════════════════════════════════════════
+        function ozetiGuncelle() {
+            // We now check for checkboxes in Criteria section
+            const uygunDegilChecks = document.querySelectorAll('.kriter-check:checked');
+            const ozetKart = document.getElementById('ozetKart');
+            const ozetIcerik = document.getElementById('ozetIcerik');
+            const ozetSayac = document.getElementById('ozetSayac');
+
+            if (!ozetKart || !ozetIcerik || !ozetSayac) return;
+
+            if (uygunDegilChecks.length === 0) {
+                ozetKart.style.display = 'none';
+                return;
+            }
+
+            ozetKart.style.display = 'block';
+
+            const toplamKriter = document.querySelectorAll('.kriter-row').length;
+            ozetSayac.textContent = `${uygunDegilChecks.length} / ${toplamKriter}`;
+
+            let html = `<div class="mb-3">
             <strong>Toplam ${toplamKriter} kriterden ${uygunDegilChecks.length} tanesi uygun değil bulunmuştur.</strong>
         </div>`;
 
-        html += '<div>';
-        uygunDegilChecks.forEach(cb => {
-            const row = cb.closest('tr');
-            const no = row.dataset.kriterNo;
-            const metin = row.querySelector('.kriter-metin')?.textContent?.trim() || '';
-            const aciklamaRow = document.querySelector(`[data-aciklama-for="${no}"]`);
-            const aciklama = aciklamaRow?.querySelector('textarea')?.value?.trim() || '';
+            html += '<div>';
+            uygunDegilChecks.forEach(cb => {
+                const row = cb.closest('tr');
+                const no = row.dataset.kriterNo;
+                const metin = row.querySelector('.kriter-metin')?.textContent?.trim() || '';
+                const aciklamaRow = document.querySelector(`[data-aciklama-for="${no}"]`);
+                const aciklama = aciklamaRow?.querySelector('textarea')?.value?.trim() || '';
 
-            const kisaMetin = metin.length > 120 ? metin.substring(0, 120) + '...' : metin;
+                const kisaMetin = metin.length > 120 ? metin.substring(0, 120) + '...' : metin;
 
-            html += `<div class="ozet-item">
+                html += `<div class="ozet-item">
                 <span class="ozet-item-no">Kriter ${no}:</span> ${kisaMetin}`;
-            if (aciklama) {
-                html += `<br><em class="text-muted ms-3"><i class="bi bi-chat-left-text me-1"></i>${aciklama}</em>`;
-            }
-            html += '</div>';
-        });
-        html += '</div>';
-
-        ozetIcerik.innerHTML = html;
-    }
-
-    // Textarea changes update summary
-    document.querySelectorAll('.kriter-aciklama-input').forEach(textarea => {
-        textarea.addEventListener('input', ozetiGuncelle);
-    });
-
-    // ═══════════════════════════════════════════════════════════════
-    // Ön Kontrol Durum Kontrol (Save Button Text/State)
-    // ═══════════════════════════════════════════════════════════════
-    const btnOnKontrolKaydet = document.getElementById('btnOnKontrolKaydet');
-
-    function onKontrolDurumKontrol() {
-        const rows = document.querySelectorAll('#onKontrolTablosu tbody tr');
-        let secilenSayisi = 0;
-        rows.forEach(row => {
-            if (row.querySelector('input[type="radio"]:checked')) secilenSayisi++;
-        });
-
-        if (btnOnKontrolKaydet) {
-            btnOnKontrolKaydet.disabled = false;
-            btnOnKontrolKaydet.innerHTML = `<i class="bi bi-save me-1"></i>Taslağı Kaydet (${secilenSayisi}/${rows.length})`;
-            btnOnKontrolKaydet.className = 'btn btn-sm btn-light text-primary fw-bold';
-
-            if (secilenSayisi === rows.length) {
-                btnOnKontrolKaydet.innerHTML = `<i class="bi bi-check-all me-1"></i>Ön Kontrolü Tamamla (${secilenSayisi}/${rows.length})`;
-                btnOnKontrolKaydet.className = 'btn btn-sm btn-light text-orange fw-bold';
-            }
-        }
-    }
-
-    document.getElementById('btnOnKontrolTemizle')?.addEventListener('click', function () {
-        if (confirm('Tüm ön kontrol seçimlerini temizlemek istediğinizden emin misiniz?')) {
-            document.querySelectorAll('#onKontrolTablosu input[type="radio"]').forEach(r => r.checked = false);
-            document.querySelectorAll('#onKontrolTablosu input[type="text"]').forEach(i => i.value = '');
-            document.querySelectorAll('#onKontrolTablosu tbody tr').forEach(tr => {
-                tr.classList.remove('on-kontrol-var', 'on-kontrol-yok', 'on-kontrol-na', 'table-success', 'table-danger', 'table-warning');
-            });
-            onKontrolDurumKontrol();
-            alert('Ön kontrol seçimleri temizlendi.');
-        }
-    });
-
-    btnOnKontrolKaydet?.addEventListener('click', function () {
-        const formData = new FormData(document.getElementById('degerlendirmeForm'));
-        fetch("{{ url_for('on_kontrol_kaydet', id=basvuru.id) }}", {
-            method: 'POST',
-            body: formData
-        })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    const statusBadge = document.getElementById('mainStatusBadge');
-                    if (statusBadge && data.new_status) {
-                        const iconAttr = data.new_status_icon || 'bi-check-all';
-                        statusBadge.innerHTML = `<i class="bi ${iconAttr} me-1"></i>${data.new_status}`;
-                        const cls = data.new_status_class || 'info';
-                        statusBadge.className = `badge bg-${cls}-subtle text-${cls} fs-6 py-2 px-3 shadow-sm`;
-                    }
-                    hazirlaWhatsappMesaji();
-                    alert("Ön kontrol başarıyla kaydedildi.");
-                } else {
-                    alert("Hata: " + (data.message || "Kaydedilemedi."));
+                if (aciklama) {
+                    html += `<br><em class="text-muted ms-3"><i class="bi bi-chat-left-text me-1"></i>${aciklama}</em>`;
                 }
-            })
-            .catch(error => { console.error('Hata:', error); alert("Kaydetme sırasında bir hata oluştu."); });
-    });
+                html += '</div>';
+            });
+            html += '</div>';
 
-    // ═══════════════════════════════════════════════════════════════
-    // WhatsApp Mesajı
-    // ═══════════════════════════════════════════════════════════════
-    function hazirlaWhatsappMesaji(scroll = false) {
-        const basvuruNo = "{{ basvuru.basvuru_no }}";
-        const secilenDegerlerlendiriciler = [];
-        document.querySelectorAll('.deg-checkbox:checked').forEach(cb => {
-            secilenDegerlerlendiriciler.push(cb.value);
+            ozetIcerik.innerHTML = html;
+        }
+
+        // Textarea changes update summary
+        document.querySelectorAll('.kriter-aciklama-input').forEach(textarea => {
+            textarea.addEventListener('input', ozetiGuncelle);
         });
 
-        const yokMaddeleri = [];
-        let evrakEksik = false;
-        const belgeSiralar = [1, 3, 4, 5, 6, 7, 8, 9, 10];
+        // ═══════════════════════════════════════════════════════════════
+        // Ön Kontrol Durum Kontrol (Save Button Text/State)
+        // ═══════════════════════════════════════════════════════════════
+        const btnOnKontrolKaydet = document.getElementById('btnOnKontrolKaydet');
 
-        document.querySelectorAll('#onKontrolTablosu tbody tr').forEach((row) => {
-            const radYok = row.querySelector('.radio-yok');
-            if (!radYok) return;
+        function onKontrolDurumKontrol() {
+            const rows = document.querySelectorAll('#onKontrolTablosu tbody tr');
+            let secilenSayisi = 0;
+            rows.forEach(row => {
+                if (row.querySelector('input[type="radio"]:checked')) secilenSayisi++;
+            });
 
-            const parts = radYok.name.split('_');
-            const sira = parseInt(parts[parts.length - 1]);
-            const aciklama = row.querySelector('input[type="text"]')?.value?.trim() || '';
+            if (btnOnKontrolKaydet) {
+                btnOnKontrolKaydet.disabled = false;
+                btnOnKontrolKaydet.innerHTML = `<i class="bi bi-save me-1"></i>Taslağı Kaydet (${secilenSayisi}/${rows.length})`;
+                btnOnKontrolKaydet.className = 'btn btn-sm btn-light text-primary fw-bold';
 
-            if (radYok.checked) {
-                const maddeAdi = row.querySelector('td:first-child')?.textContent?.trim() || `Madde ${sira}`;
-                yokMaddeleri.push({ ad: maddeAdi, not: aciklama });
-                if (belgeSiralar.includes(sira)) evrakEksik = true;
-            } else if (aciklama.length > 0) {
-                const maddeAdi = row.querySelector('td:first-child')?.textContent?.trim() || `Madde ${sira}`;
-                let statusText = "(Seçilmedi)";
-                if (row.querySelector('.radio-var')?.checked) statusText = "(VAR)";
-                if (row.querySelector('.radio-na')?.checked) statusText = "(N/A)";
-                yokMaddeleri.push({ ad: maddeAdi + " " + statusText, not: aciklama });
+                if (secilenSayisi === rows.length) {
+                    btnOnKontrolKaydet.innerHTML = `<i class="bi bi-check-all me-1"></i>Ön Kontrolü Tamamla (${secilenSayisi}/${rows.length})`;
+                    btnOnKontrolKaydet.className = 'btn btn-sm btn-light text-orange fw-bold';
+                }
+            }
+        }
+
+        document.getElementById('btnOnKontrolTemizle')?.addEventListener('click', function () {
+            if (confirm('Tüm ön kontrol seçimlerini temizlemek istediğinizden emin misiniz?')) {
+                document.querySelectorAll('#onKontrolTablosu input[type="radio"]').forEach(r => r.checked = false);
+                document.querySelectorAll('#onKontrolTablosu input[type="text"]').forEach(i => i.value = '');
+                document.querySelectorAll('#onKontrolTablosu tbody tr').forEach(tr => {
+                    tr.classList.remove('on-kontrol-var', 'on-kontrol-yok', 'on-kontrol-na', 'table-success', 'table-danger', 'table-warning');
+                });
+                onKontrolDurumKontrol();
+                alert('Ön kontrol seçimleri temizlendi.');
             }
         });
 
-        let mesaj = `*${basvuruNo}*\n\n📌 Atanan değerlendiriciler:\n`;
-        if (secilenDegerlerlendiriciler.length > 0) {
-            secilenDegerlerlendiriciler.forEach(d => mesaj += `👤 ${d}\n`);
-        } else {
-            mesaj += `(Değerlendirici seçilmedi)\n`;
-        }
-        mesaj += `\n📄 Evraklar: ${evrakEksik ? '❌ Eksik' : '✅ Tam'}\n\n📝 Ön değerlendirme notları:\n`;
-        if (yokMaddeleri.length > 0) {
-            yokMaddeleri.forEach(m => { mesaj += `* ${m.ad}${m.not ? ' (' + m.not + ')' : ''}\n`; });
-        } else {
-            mesaj += `* Evraklar uygun bulunmuştur.\n* [Diğer notlarınızı buraya ekleyebilirsiniz]`;
-        }
-
-        const icerik = document.getElementById('whatsappIcerik');
-        if (icerik) icerik.value = mesaj;
-        const panel = document.getElementById('whatsappPanel');
-        if (panel) {
-            panel.style.display = 'block';
-            if (scroll) panel.scrollIntoView({ behavior: 'smooth' });
-        }
-    }
-
-    window.whatsappKopyala = function () {
-        const text = document.getElementById('whatsappIcerik').value;
-        navigator.clipboard.writeText(text).then(() => {
-            const btn = document.querySelector('#whatsappPanel .btn-light');
-            const originalHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Kopyalandı!';
-            btn.classList.replace('btn-light', 'btn-success');
-            btn.classList.add('text-white');
-            setTimeout(() => {
-                btn.innerHTML = originalHtml;
-                btn.classList.replace('btn-success', 'btn-light');
-                btn.classList.remove('text-white');
-            }, 2000);
+        btnOnKontrolKaydet?.addEventListener('click', function () {
+            const formData = new FormData(document.getElementById('degerlendirmeForm'));
+            fetch("{{ url_for('on_kontrol_kaydet', id=basvuru.id) }}", {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const statusBadge = document.getElementById('mainStatusBadge');
+                        if (statusBadge && data.new_status) {
+                            const iconAttr = data.new_status_icon || 'bi-check-all';
+                            statusBadge.innerHTML = `<i class="bi ${iconAttr} me-1"></i>${data.new_status}`;
+                            const cls = data.new_status_class || 'info';
+                            statusBadge.className = `badge bg-${cls}-subtle text-${cls} fs-6 py-2 px-3 shadow-sm`;
+                        }
+                        hazirlaWhatsappMesaji();
+                        alert("Ön kontrol başarıyla kaydedildi.");
+                    } else {
+                        alert("Hata: " + (data.message || "Kaydedilemedi."));
+                    }
+                })
+                .catch(error => { console.error('Hata:', error); alert("Kaydetme sırasında bir hata oluştu."); });
         });
-    };
 
-    // Initialize
-    onKontrolDurumKontrol();
-    ozetiGuncelle();
-    if (document.querySelectorAll('.radio-yok:checked').length > 0) hazirlaWhatsappMesaji();
+        // ═══════════════════════════════════════════════════════════════
+        // WhatsApp Mesajı
+        // ═══════════════════════════════════════════════════════════════
+        function hazirlaWhatsappMesaji(scroll = false) {
+            const basvuruNo = "{{ basvuru.basvuru_no }}";
+            const secilenDegerlerlendiriciler = [];
+            document.querySelectorAll('.deg-checkbox:checked').forEach(cb => {
+                secilenDegerlerlendiriciler.push(cb.value);
+            });
 
-    // Form Change Warning
-    let formChanged = false;
-    const form = document.getElementById('degerlendirmeForm');
-    if (form) {
-        form.addEventListener('change', () => formChanged = true);
-        form.addEventListener('input', () => formChanged = true);
-        form.addEventListener('submit', () => formChanged = false);
-    }
-    window.addEventListener('beforeunload', (e) => {
-        if (formChanged) { e.preventDefault(); e.returnValue = ''; }
-    });
-</script>
-{% endblock %}
+            const yokMaddeleri = [];
+            let evrakEksik = false;
+            const belgeSiralar = [1, 3, 4, 5, 6, 7, 8, 9, 10];
+
+            document.querySelectorAll('#onKontrolTablosu tbody tr').forEach((row) => {
+                const radYok = row.querySelector('.radio-yok');
+                if (!radYok) return;
+
+                const parts = radYok.name.split('_');
+                const sira = parseInt(parts[parts.length - 1]);
+                const aciklama = row.querySelector('input[type="text"]')?.value?.trim() || '';
+
+                if (radYok.checked) {
+                    const maddeAdi = row.querySelector('td:first-child')?.textContent?.trim() || `Madde ${sira}`;
+                    yokMaddeleri.push({ ad: maddeAdi, not: aciklama });
+                    if (belgeSiralar.includes(sira)) evrakEksik = true;
+                } else if (aciklama.length > 0) {
+                    const maddeAdi = row.querySelector('td:first-child')?.textContent?.trim() || `Madde ${sira}`;
+                    let statusText = "(Seçilmedi)";
+                    if (row.querySelector('.radio-var')?.checked) statusText = "(VAR)";
+                    if (row.querySelector('.radio-na')?.checked) statusText = "(GEREKLİ DEĞİL)";
+                    yokMaddeleri.push({ ad: maddeAdi + " " + statusText, not: aciklama });
+                }
+            });
+
+            let mesaj = `*${basvuruNo}*\n\n📌 Atanan değerlendiriciler:\n`;
+            if (secilenDegerlerlendiriciler.length > 0) {
+                secilenDegerlerlendiriciler.forEach(d => mesaj += `👤 ${d}\n`);
+            } else {
+                mesaj += `(Değerlendirici seçilmedi)\n`;
+            }
+            mesaj += `\n📄 Evraklar: ${evrakEksik ? '❌ Eksik' : '✅ Tam'}\n\n📝 Ön değerlendirme notları:\n`;
+            if (yokMaddeleri.length > 0) {
+                yokMaddeleri.forEach(m => { mesaj += `* ${m.ad}${m.not ? ' (' + m.not + ')' : ''}\n`; });
+            } else {
+                mesaj += `* Evraklar uygun bulunmuştur.\n* [Diğer notlarınızı buraya ekleyebilirsiniz]`;
+            }
+
+            const icerik = document.getElementById('whatsappIcerik');
+            if (icerik) icerik.value = mesaj;
+            const panel = document.getElementById('whatsappPanel');
+            if (panel) {
+                panel.style.display = 'block';
+                if (scroll) panel.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        window.whatsappKopyala = function () {
+            const text = document.getElementById('whatsappIcerik').value;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('#whatsappPanel .btn-light');
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="bi bi-check2 me-1"></i>Kopyalandı!';
+                btn.classList.replace('btn-light', 'btn-success');
+                btn.classList.add('text-white');
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                    btn.classList.replace('btn-success', 'btn-light');
+                    btn.classList.remove('text-white');
+                }, 2000);
+            });
+        };
+
+        // Initialize
+        onKontrolDurumKontrol();
+        ozetiGuncelle();
+        if (document.querySelectorAll('.radio-yok:checked').length > 0) hazirlaWhatsappMesaji();
+
+        // Form Change Warning
+        let formChanged = false;
+        const form = document.getElementById('degerlendirmeForm');
+        if (form) {
+            form.addEventListener('change', () => formChanged = true);
+            form.addEventListener('input', () => formChanged = true);
+            form.addEventListener('submit', () => formChanged = false);
+        }
+        window.addEventListener('beforeunload', (e) => {
+            if (formChanged) { e.preventDefault(); e.returnValue = ''; }
+        });
+    </script>
+    {% endblock %}

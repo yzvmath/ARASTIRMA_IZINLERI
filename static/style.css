@@ -60,8 +60,60 @@ body {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--border-color);
-    padding: 0.5rem 0;
+    padding: 0.75rem 0;
     z-index: 1050;
+}
+
+/* ─── Custom Nav Pills ────────────────────────────────────────── */
+.nav-pill-custom {
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 1.25rem !important;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    color: var(--text-primary) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid transparent;
+    font-size: 0.95rem;
+    gap: 0.6rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-pill-custom i {
+    font-size: 1.15rem;
+    opacity: 0.85;
+    transition: transform 0.3s ease;
+}
+
+.nav-pill-custom:hover {
+    background: var(--border-color);
+    transform: translateY(-2px);
+    color: var(--accent-blue) !important;
+}
+
+.nav-pill-custom:hover i {
+    transform: scale(1.15);
+    opacity: 1;
+}
+
+.nav-pill-custom.active {
+    background: var(--accent-blue) !important;
+    color: white !important;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+}
+
+.nav-pill-custom.active i {
+    color: white !important;
+    opacity: 1;
+}
+
+[data-bs-theme="dark"] .nav-pill-custom:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+[data-bs-theme="dark"] .nav-pill-custom.active {
+    box-shadow: 0 8px 25px rgba(37, 99, 235, 0.35);
 }
 
 .brand-icon {
@@ -214,6 +266,25 @@ body {
     background: linear-gradient(135deg, #7c3aed, #a855f7) !important;
 }
 
+.section-header--mustard {
+    background: linear-gradient(135deg, #d97706, #f59e0b) !important;
+}
+
+/* ─── Araştırma Adı Sınırlama ────────────────────────────────────────── */
+.research-title-cell {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.4 !important;
+    max-height: 2.8em !important;
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: break-word !important;
+    width: 100% !important;
+}
+
 /* ─── Değerlendirici Kartları ─────────────────────────────────────────── */
 .deg-card {
     display: block;
@@ -306,8 +377,8 @@ body {
 }
 
 .deg-progress {
-    height: 6px;
-    border-radius: 3px;
+    height: 16px;
+    border-radius: 4px;
     margin-bottom: 0.4rem;
     background: var(--border-color);
 }
@@ -574,6 +645,43 @@ body {
     box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.20);
 }
 
+/* ─── Kriter "Uygun Değil" Checkbox Özel Stili ──────────────────────── */
+.kriter-check {
+    border: 2px solid rgba(220, 38, 38, 0.4) !important;
+    background-color: transparent;
+}
+
+.kriter-check:hover {
+    border-color: var(--accent-red) !important;
+    box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.1) !important;
+    transform: scale(1.1);
+}
+
+.kriter-check:checked {
+    background-color: var(--accent-red) !important;
+    border-color: var(--accent-red) !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M5 10l3 3 7-7'/%3e%3c/svg%3e") !important;
+    animation: checkboxPop 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes checkboxPop {
+    0% {
+        transform: scale(0.8);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+[data-bs-theme="dark"] .kriter-check {
+    border-color: rgba(220, 38, 38, 0.6) !important;
+}
+
 .radio-na:checked {
     background-color: #6b7280;
     border-color: #6b7280;
@@ -691,6 +799,10 @@ body {
     color: var(--accent-warning-readable) !important;
 }
 
+.bg-warning-dark {
+    background-color: var(--accent-warning-readable) !important;
+}
+
 .bg-warning-dark-subtle {
     background-color: rgba(154, 103, 0, 0.1) !important;
     border: 1px solid rgba(154, 103, 0, 0.2) !important;
@@ -717,6 +829,100 @@ body {
 .bg-teal-subtle {
     background-color: rgba(13, 148, 136, 0.1) !important;
     border: 1px solid rgba(13, 148, 136, 0.2) !important;
+}
+
+/* ─── Coordinator Decision Buttons (Premium UI) ───────────────────────── */
+.decision-group {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.decision-option {
+    flex: 1;
+    position: relative;
+}
+
+.decision-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.decision-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.5rem 1rem;
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+}
+
+.decision-label i {
+    font-size: 2.5rem;
+    transition: var(--transition);
+}
+
+.decision-label .decision-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 2px;
+}
+
+.decision-label .decision-desc {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.decision-option--onay .decision-label i {
+    color: var(--accent-green);
+    opacity: 0.5;
+}
+
+.decision-option--red .decision-label i {
+    color: var(--accent-red);
+    opacity: 0.5;
+}
+
+.decision-label:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+[data-bs-theme="dark"] .decision-label:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Checked States */
+.decision-input:checked+.decision-label {
+    box-shadow: var(--shadow-lg);
+}
+
+.decision-option--onay .decision-input:checked+.decision-label {
+    border-color: var(--accent-green);
+    background: rgba(22, 163, 74, 0.08);
+}
+
+.decision-option--onay .decision-input:checked+.decision-label i {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.decision-option--red .decision-input:checked+.decision-label {
+    border-color: var(--accent-red);
+    background: rgba(220, 38, 38, 0.08);
+}
+
+.decision-option--red .decision-input:checked+.decision-label i {
+    opacity: 1;
+    transform: scale(1.1);
 }
 
 /* ─── Footer ──────────────────────────────────────────────────────────── */
@@ -809,21 +1015,22 @@ body {
     animation-delay: 0.3s;
 }
 
-/* ─── Print Styles - Focused Deficiency Report ───────────────────────── */
+/* ─── Print Styles - Professional 1-Page Report ───────────────────────── */
 @media print {
     @page {
-        margin: 1.5cm;
+        margin: 1cm;
         size: A4;
     }
 
     body {
         background: white !important;
         color: black !important;
-        font-size: 11pt !important;
-        padding-top: 0 !important;
+        font-size: 10pt !important;
+        padding: 0 !important;
+        line-height: 1.3 !important;
     }
 
-    /* Hide UI non-essentials */
+    /* Hide Screen-Only Elements */
     .navbar,
     .footer-bar,
     .btn,
@@ -834,176 +1041,419 @@ body {
     .modal,
     .section-header button,
     #degUyari,
-    .input-group-text,
-    .btn-icon,
     .badge i,
-    hr,
-    .card-header .bi {
+    .no-print-section,
+    .btn-icon,
+    hr {
         display: none !important;
     }
 
-    /* Hide satisfied items (The Core Change) */
-    .on-kontrol-row.on-kontrol-var,
-    .on-kontrol-row.on-kontrol-na,
-    .kriter-row.kriter-uygun {
-        display: none !important;
+    /* Layout Adjustments */
+    .container-fluid {
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
-
-    /* Hide description rows if the parent criterion is Appropriate */
-    .kriter-aciklama-row:not(.show) {
-        display: none !important;
-    }
-
-    /* If a whole section has no deficiencies, we might still want to show it or a "No issues" message, 
-       but for now let's just show the header and the items if they exist. */
 
     .glass-card,
     .card {
         background: transparent !important;
-        border: none !important;
+        border: 1px solid #ddd !important;
+        border-radius: 0 !important;
         box-shadow: none !important;
-        margin-bottom: 20pt !important;
-        padding: 0 !important;
-        overflow: visible !important;
+        margin-bottom: 10pt !important;
+        page-break-inside: avoid;
     }
 
     .card-body {
-        padding: 0 !important;
+        padding: 8pt !important;
     }
 
-    /* Report Header */
-    .print-header {
+    /* Report Title & Header */
+    .print-report-header {
         display: block !important;
         text-align: center;
-        margin-bottom: 2rem;
-        border-bottom: 2px solid #000;
-        padding-bottom: 1rem;
+        margin-bottom: 15pt;
+        padding-bottom: 10pt;
+        border-bottom: 2px solid #333;
     }
 
-    .print-header h1 {
+    .print-report-header h1 {
         font-size: 16pt;
         font-weight: 800;
-        margin: 0;
-    }
-
-    .print-header p {
-        margin: 4px 0;
-        font-size: 10pt;
-    }
-
-    /* Section Headers */
-    .section-header {
-        background: #f8f9fa !important;
-        color: black !important;
-        border-bottom: 1px solid #333 !important;
-        padding: 5pt 0 !important;
-        margin-top: 20pt !important;
-        border-radius: 0 !important;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-
-    .section-header h5 {
-        font-size: 13pt;
-        font-weight: 700;
         margin: 0;
         text-transform: uppercase;
     }
 
-    /* Application Info Grid */
-    .info-item {
-        margin-bottom: 8pt;
+    .print-report-header h2 {
+        font-size: 11pt;
+        margin: 4pt 0;
+        color: #555;
     }
 
-    .info-label {
-        font-size: 9pt !important;
-        color: #666 !important;
+    /* Compact Info Grid */
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5pt;
+        margin-bottom: 10pt;
+    }
+
+    .info-box {
+        border: 1px solid #eee;
+        padding: 4pt;
+    }
+
+    .info-box-label {
+        font-size: 8pt;
+        font-weight: 600;
+        color: #777;
+        text-transform: uppercase;
         display: block;
     }
 
-    .info-value {
-        font-size: 11pt !important;
-        font-weight: 700 !important;
+    .info-box-value {
+        font-size: 10pt;
+        font-weight: 700;
     }
 
-    /* Tables for Deficiencies */
-    .table {
-        width: 100% !important;
-        margin-top: 10pt !important;
-    }
-
-    .table th,
-    .table td {
-        border-bottom: 1px solid #eee !important;
-        padding: 8pt 0 !important;
-        text-align: left !important;
-    }
-
-    .table thead {
-        display: none !important;
-        /* Hide headers since we are listing deficiencies */
-    }
-
-    /* Status Indicators in Print */
-    .on-kontrol-row.on-kontrol-yok td:first-child::before {
-        content: "[EKSİK] ";
-        font-weight: 800;
-        color: #d63384;
-    }
-
-    .kriter-row.kriter-uygun-degil td.kriter-metin::before {
-        content: "[UYGUN DEĞİL] ";
-        font-weight: 800;
-        color: #d63384;
-    }
-
-    /* Hide the radio columns in print, just show the text and descriptions */
-    #onKontrolTablosu td:nth-child(2),
-    #onKontrolTablosu td:nth-child(3),
-    #onKontrolTablosu td:nth-child(4),
-    #kriterTablosu td:nth-child(3),
-    #kriterTablosu td:nth-child(4) {
-        display: none !important;
-    }
-
-    /* Show explanation text clearly */
-    .kriter-aciklama-row td {
-        padding-left: 20pt !important;
-        border-bottom: 1px solid #eee !important;
-    }
-
-    textarea,
-    input[type="text"] {
-        border: none !important;
-        background: transparent !important;
-        font-style: italic;
-        padding: 0 !important;
-        height: auto !important;
-        min-height: 0 !important;
-    }
-
-    /* Signatures */
-    .print-footer {
-        display: flex !important;
-        justify-content: space-around;
-        margin-top: 4rem;
+    /* Signature Section */
+    .signature-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20pt;
+        margin-top: 30pt;
         page-break-inside: avoid;
     }
 
-    .sig-box {
-        width: 40%;
+    .signature-item {
         text-align: center;
-        border-top: 1px solid #000;
-        padding-top: 10pt;
+        border-top: 1px solid #333;
+        padding-top: 5pt;
     }
 
-    /* Page Breaks */
-    .card,
-    .section-header {
-        page-break-inside: avoid;
+    .signature-title {
+        font-weight: 700;
+        font-size: 9pt;
+        margin-bottom: 2pt;
+    }
+
+    .signature-name {
+        font-size: 9pt;
+        margin-bottom: 20pt;
+    }
+
+    .signature-space {
+        height: 40pt;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    /* Report Sections */
+    .report-section-title {
+        background: #f0f0f0 !important;
+        padding: 4pt 8pt;
+        font-weight: 700;
+        font-size: 10pt;
+        border-bottom: 1px solid #333;
+        margin-bottom: 5pt;
+        text-transform: uppercase;
+        -webkit-print-color-adjust: exact;
+    }
+
+    /* Results Table */
+    .report-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 10pt;
+    }
+
+    .report-table th,
+    .report-table td {
+        border: 1px solid #ddd;
+        padding: 4pt 6pt;
+        font-size: 9pt;
+        text-align: left;
+    }
+
+    .report-table th {
+        background: #fafafa !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .status-badge {
+        font-weight: 700;
+        padding: 1pt 4pt;
+        border: 1px solid #333;
+        font-size: 8pt;
+    }
+
+    /* Deficiency Focus */
+    .deficient-only .row-appropriate {
+        display: none !important;
+    }
+
+    /* Decisions */
+    .decision-summary {
+        padding: 8pt;
+        border: 2px solid #333;
+        background: #f9f9f9 !important;
+    }
+
+    /* Hide Original Elements in Report Mode */
+    .print-only {
+        display: block !important;
+    }
+
+    .screen-only {
+        display: none !important;
     }
 }
 
-.print-header {
+.print-only {
     display: none;
+}
+
+/* ─── Gelişmiş Tarih/Kalan Süre Badge'leri ────────────────────────────── */
+.countdown-badge {
+    display: inline-block;
+    font-size: 0.62rem;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 20px;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.countdown-safe {
+    background-color: rgba(22, 163, 74, 0.1);
+    color: var(--accent-green);
+    border: 1px solid rgba(22, 163, 74, 0.2);
+}
+
+.countdown-warning {
+    background-color: rgba(217, 119, 6, 0.1);
+    color: #d97706;
+    /* Amber */
+    border: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+.countdown-critical {
+    background-color: rgba(234, 88, 12, 0.1);
+    color: var(--accent-orange);
+    /* Orange */
+    border: 1px solid rgba(234, 88, 12, 0.2);
+}
+
+.countdown-danger {
+    background-color: rgba(220, 38, 38, 0.1);
+    color: var(--accent-red);
+    border: 1px solid rgba(220, 38, 38, 0.2);
+    animation: urgentPulse 1.5s infinite;
+}
+
+.countdown-expired {
+    background-color: var(--accent-red);
+    color: white;
+    border: 1px solid var(--accent-red);
+    box-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
+    animation: expiredPulse 1s infinite;
+}
+
+@keyframes urgentPulse {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes expiredPulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4);
+    }
+
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 6px rgba(220, 38, 38, 0);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+    }
+}
+
+[data-bs-theme="dark"] .countdown-safe {
+    background-color: rgba(22, 163, 74, 0.2);
+}
+
+[data-bs-theme="dark"] .countdown-warning {
+    background-color: rgba(217, 119, 6, 0.2);
+}
+
+[data-bs-theme="dark"] .countdown-critical {
+    background-color: rgba(234, 88, 12, 0.2);
+}
+
+[data-bs-theme="dark"] .countdown-danger {
+    background-color: rgba(220, 38, 38, 0.2);
+}
+
+/* ─── Geçmiş Başvurular (Genişleyen Satır) ─────────────────────────────────── */
+.history-trigger {
+    cursor: pointer;
+    font-size: 0.7rem;
+    color: var(--accent-blue);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    margin-top: 0.25rem;
+    padding: 0.15rem 0.4rem;
+    background-color: rgba(37, 99, 235, 0.05);
+    /* very light blue */
+    border-radius: 4px;
+    border: 1px solid rgba(37, 99, 235, 0.1);
+    transition: all 0.2s ease;
+    z-index: 10;
+    pointer-events: auto;
+    white-space: nowrap;
+}
+
+.history-trigger:hover {
+    background-color: rgba(37, 99, 235, 0.1);
+    color: #1d4ed8;
+}
+
+.history-trigger.active {
+    background: var(--accent-blue);
+    color: white;
+    border-color: var(--accent-blue);
+    font-style: normal;
+}
+
+.history-row {
+    background-color: rgba(13, 110, 253, 0.03) !important;
+    border-bottom: 2px solid var(--accent-blue) !important;
+}
+
+[data-bs-theme="dark"] .history-row {
+    background-color: rgba(13, 110, 253, 0.06) !important;
+    border-bottom: 2px solid var(--accent-blue) !important;
+}
+
+/* Ana satır için vurgu sınıfı */
+tr.active-history-parent>td {
+    background-color: rgba(13, 110, 253, 0.12) !important;
+    border-top: 2px solid var(--accent-blue) !important;
+    border-bottom: none !important;
+    transition: background-color 0.3s ease;
+}
+
+[data-bs-theme="dark"] tr.active-history-parent>td {
+    background-color: rgba(13, 110, 253, 0.18) !important;
+    border-top: 2px solid var(--accent-blue) !important;
+}
+
+.history-expand-wrapper {
+    overflow: hidden;
+    transition: all 0.35s ease-in-out;
+}
+
+.history-container {
+    padding: 15px 25px;
+    border-left: 2px solid var(--border-color);
+    margin: 10px 0 15px 45px;
+}
+
+.history-item:hover {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+[data-bs-theme="dark"] .history-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.history-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.history-details {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.history-timeline {
+    position: relative;
+}
+
+.history-item-embedded {
+    position: relative;
+    padding-left: 25px;
+    margin-bottom: 20px;
+}
+
+.history-item-embedded:last-child {
+    margin-bottom: 0;
+}
+
+.history-item-embedded::before {
+    content: '';
+    position: absolute;
+    left: -1px;
+    top: 6px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-blue);
+    z-index: 1;
+}
+
+.history-item-embedded::after {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 14px;
+    width: 1px;
+    height: calc(100% + 10px);
+    background: var(--border-color);
+}
+
+.history-item-embedded:last-child::after {
+    display: none;
+}
+
+.history-link-btn {
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    padding: 2px 10px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    border: 1px solid var(--accent-blue);
+    color: var(--accent-blue);
+}
+
+.history-link-btn:hover {
+    background: var(--accent-blue);
+    color: white !important;
 }
