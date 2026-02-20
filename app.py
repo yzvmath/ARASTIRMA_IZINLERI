@@ -619,11 +619,7 @@ def _get_degerlendirici_stats():
             "son_30_gun": tamamlandi_30_gun, 
             "toplam_30_gun": toplam_30_gun,
             "aktif": d_obj.aktif,
-<<<<<<< HEAD
             "rol": rol
-=======
-            "rol": d_obj.rol
->>>>>>> 2121997d570c08645e75c5e3c9a65bbe5361187d
         }
         deg_panel.append(stats)
         is_yuku[d] = stats
@@ -994,10 +990,7 @@ def degerlendiriciler():
 @app.route("/degerlendiriciler/ekle", methods=["POST"])
 def degerlendirici_ekle():
     ad = request.form.get("ad_soyad", "").strip().upper()
-<<<<<<< HEAD
     tc = request.form.get("tc_kimlik", "").strip()
-=======
->>>>>>> 2121997d570c08645e75c5e3c9a65bbe5361187d
     rol = request.form.get("rol", "degerlendirici")
     if ad:
         if Degerlendirici.query.filter_by(ad_soyad=ad).first():
@@ -1005,11 +998,7 @@ def degerlendirici_ekle():
         elif tc and Degerlendirici.query.filter_by(tc_kimlik=tc).first():
             flash(f"{tc} T.C. Kimlik numarası zaten sisteme kayıtlı.", "warning")
         else:
-<<<<<<< HEAD
             db.session.add(Degerlendirici(ad_soyad=ad, tc_kimlik=tc, aktif=True, rol=rol))
-=======
-            db.session.add(Degerlendirici(ad_soyad=ad, aktif=True, rol=rol))
->>>>>>> 2121997d570c08645e75c5e3c9a65bbe5361187d
             db.session.commit()
             flash(f"{ad} eklendi.", "success")
     return redirect(url_for("degerlendiriciler"))
@@ -1022,14 +1011,10 @@ def degerlendirici_duzenle(id):
     eski_ad = d.ad_soyad
     yeni_rol = request.form.get("rol", d.rol)
     
-<<<<<<< HEAD
     if yeni_tc and yeni_tc != d.tc_kimlik:
         if Degerlendirici.query.filter_by(tc_kimlik=yeni_tc).first():
             flash(f"{yeni_tc} T.C. Kimlik numarası zaten başka bir kayıtta mevcut.", "warning")
             return redirect(url_for("degerlendiriciler"))
-
-=======
->>>>>>> 2121997d570c08645e75c5e3c9a65bbe5361187d
     if yeni_ad:
         if yeni_ad != eski_ad:
             # Mevcut atamalardaki isimleri de güncelle (tutarlılık için)
@@ -1038,10 +1023,7 @@ def degerlendirici_duzenle(id):
                 atama.degerlendirici_adi = yeni_ad
             d.ad_soyad = yeni_ad
         
-<<<<<<< HEAD
         d.tc_kimlik = yeni_tc
-=======
->>>>>>> 2121997d570c08645e75c5e3c9a65bbe5361187d
         d.rol = yeni_rol
         db.session.commit()
         flash("Personel bilgileri güncellendi.", "success")
